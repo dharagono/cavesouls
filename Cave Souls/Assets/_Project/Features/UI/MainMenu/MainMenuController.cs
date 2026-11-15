@@ -327,6 +327,20 @@ namespace CaveSouls.Features.UI
         {
             if (_state == MenuState.TransitioningToGame || _state == MenuState.PlayingIntroCinematic) return;
             _isStartingNewGame = true;
+
+            if (_embeddedIntroCinematic != null)
+            {
+                if (_bgmAudioSource != null) _bgmAudioSource.Stop();
+                SetGroup(_titleLogoGroup, 0f, false);
+                SetGroup(_pressAnyButtonGroup, 0f, false);
+                SetGroup(_menuButtonsGroup, 0f, false);
+                SetGroup(_settingsPanelGroup, 0f, false);
+                SetGroup(_screenBlackFadeGroup, 1f, false);
+                ChangeState(MenuState.PlayingIntroCinematic);
+                _embeddedIntroCinematic.PlayCinematic();
+                return;
+            }
+
             ChangeState(MenuState.TransitioningToGame);
         }
 

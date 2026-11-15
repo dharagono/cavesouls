@@ -16,6 +16,12 @@ namespace CaveSouls.Features.UI
     {
         public static bool HasCompletedSplashThisSession;
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetSessionFlag()
+        {
+            HasCompletedSplashThisSession = false;
+        }
+
         private enum SplashStep : byte
         {
             InitialDelay = 0,

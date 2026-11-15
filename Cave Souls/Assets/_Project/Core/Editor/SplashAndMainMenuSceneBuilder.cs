@@ -1071,7 +1071,7 @@ namespace CaveSouls.Core.Editor
             SerializedObject embIntroSo = new SerializedObject(embIntroCtrl);
             embIntroSo.FindProperty("_playOnStart").boolValue = false;
             embIntroSo.FindProperty("_rootCanvasGroup").objectReferenceValue = embeddedIntroRootCg;
-            embIntroSo.FindProperty("_cinematicData").objectReferenceValue = introData;
+            WireIntroCinematicAssetReferences(embIntroSo);
             embIntroSo.FindProperty("_nextGameplaySceneName").stringValue = "SampleScene";
             embIntroSo.FindProperty("_slideRawImage").objectReferenceValue = embSlideImg;
             embIntroSo.FindProperty("_slideRect").objectReferenceValue = embSlideRect;
@@ -1246,7 +1246,31 @@ namespace CaveSouls.Core.Editor
 
             so.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(data);
+            AssetDatabase.SaveAssets();
             return data;
+        }
+
+        private static void WireIntroCinematicAssetReferences(SerializedObject introSo)
+        {
+            IntroCinematicDataSO freshData = AssetDatabase.LoadAssetAtPath<IntroCinematicDataSO>(SettingsDir + "/SO_IntroCinematicData.asset");
+            introSo.FindProperty("_cinematicData").objectReferenceValue = freshData;
+
+            AudioClip bgmClip = AssetDatabase.LoadAssetAtPath<AudioClip>(AudioDir + "/IntroCinematic/BGM_WeightOfTheSeal.mp3");
+            AudioClip voEnClip = AssetDatabase.LoadAssetAtPath<AudioClip>(AudioDir + "/IntroCinematic/VO_IntroVocals_English.mp3");
+            AudioClip voEsClip = AssetDatabase.LoadAssetAtPath<AudioClip>(AudioDir + "/IntroCinematic/VO_IntroVocals_Spanish.mp3");
+
+            introSo.FindProperty("_directBgmClip").objectReferenceValue = bgmClip;
+            introSo.FindProperty("_directVocalsEnglishClip").objectReferenceValue = voEnClip;
+            introSo.FindProperty("_directVocalsSpanishClip").objectReferenceValue = voEsClip;
+
+            SerializedProperty directSlidesProp = introSo.FindProperty("_directSlideTextures");
+            directSlidesProp.arraySize = 10;
+            for (int i = 0; i < 10; i++)
+            {
+                string texPath = $"Assets/_Project/Art/UI/IntroCinematic/UI_IntroSlide_{(i + 1):D2}.png";
+                Texture2D tex = AssetDatabase.LoadAssetAtPath<Texture2D>(texPath);
+                directSlidesProp.GetArrayElementAtIndex(i).objectReferenceValue = tex;
+            }
         }
 
         private static void BuildIntroCinematicScene(IntroCinematicDataSO introData, Sprite uiDarkBannerSprite)
@@ -1365,7 +1389,7 @@ namespace CaveSouls.Core.Editor
             IntroCinematicController ctrl = canvasObj.AddComponent<IntroCinematicController>();
             SerializedObject so = new SerializedObject(ctrl);
             so.FindProperty("_playOnStart").boolValue = true;
-            so.FindProperty("_cinematicData").objectReferenceValue = introData;
+            WireIntroCinematicAssetReferences(so);
             so.FindProperty("_nextGameplaySceneName").stringValue = "SampleScene";
             so.FindProperty("_slideRawImage").objectReferenceValue = slideImg;
             so.FindProperty("_slideRect").objectReferenceValue = slideRect;
