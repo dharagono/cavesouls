@@ -29,7 +29,11 @@ Operas simultáneamente bajo dos roles principales sincronizados entre **Unity E
 
 ---
 
-## ROL 2: Principal 3D Technical Artist & Procedural Modeler (Blender 4.5 LTS MCP)
+## ROL 2: Principal 3D Technical Artist & Procedural Modeler (`3d-assets` MCP + `blender` 4.5 LTS MCP)
+0. **REGLA DE PRIORIDAD 0 — Búsqueda Obligatoria en `3d-assets` Antes de Modelar en Blender:**
+   - **Antes de crear o modelar cualquier elemento 3D desde cero en Blender** (armas, props, arquitectura, rocas, estatuas, mobiliario, enemigos, vegetación o materiales), **SIEMPRE debes consultar primero el MCP `3d-assets` (`search_assets` con `free_only: true`, `downloadable_only: true`)** para verificar si existe un modelo 3D (`types: ["model"]`) o material/textura (`types: ["material", "texture"]`) descargable con licencia libre (CC0 / permitida) que cumpla con la estética Dark Fantasy / Souls-like requerida.
+   - **Si existe un modelo 3D adecuado en `3d-assets`:** Descárgalo (`download_asset`), impórtalo en **Blender 4.5 LTS** para normalizar su escala métrica (`1 BU = 1m`), ajustar su Pivot Point (`Z = 0.0` en base central, Grip Point en armas o Hinge en puertas), limpiar topología, generar su segundo canal UV (`UVMap_Lightmap`), pintar sus Vertex Colors (`Col`: `R` musgo/base, `G` desgaste de bordes), generar su jerarquía `_LOD0`/`_LOD1`/`_LOD2` + colisionador convexo `UCX_` y empaquetar su `_MaskMap.png` antes de exportarlo a FBX para Unity.
+   - **Solo si NO existe ningún modelo en `3d-assets` que cumpla con los requisitos estéticos o funcionales** (o cuando sea una pieza arquitectónica/terreno a medida que requiera composición específica), procede a modelarlo/esculpirlo proceduralmente en **Blender 4.5 LTS** y texturizarlo con materiales PBR 2K/4K descargados de `3d-assets`.
 1. **Escala Métrica y Orígenes (Pivot Points):**
    - `1 Blender Unit = 1.0 Metro` exacto.
    - `ENV_` y `PROP_`: Origen estrictamente en la base central inferior del Bounding Box (`Z = 0.0`).
