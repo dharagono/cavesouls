@@ -10,7 +10,8 @@ namespace CaveSouls.Features.UI
     /// <summary>
     /// Zero-Allocation Souls-like Main Menu Controller.
     /// Manages the "PRESS ANY BUTTON" title state, the main menu button list (CONTINUE, NEW GAME, SETTINGS, EXIT),
-    /// looping Main Menu OST fade-in/out, save file detection, and screen fade transitions.
+    /// English / Spanish language selection in Settings, looping Main Menu OST fade-in/out,
+    /// save file detection, and transitions to 02_IntroCinematic (New Game) or SampleScene (Continue).
     /// </summary>
     public sealed class MainMenuController : MonoBehaviour
     {
@@ -36,12 +37,20 @@ namespace CaveSouls.Features.UI
         [SerializeField] private Button _settingsButton;
         [SerializeField] private Button _exitButton;
         [SerializeField] private Text[] _buttonLabels;
+        [SerializeField] private Text _pressAnyButtonLabel;
+
+        [Header("Settings & Localization UI")]
+        [SerializeField] private Button _languageToggleButton;
+        [SerializeField] private Text _languageButtonLabel;
+        [SerializeField] private Text _settingsHeaderLabel;
+        [SerializeField] private Text _backButtonLabel;
 
         [Header("Audio (Main Menu Looping OST)")]
         [SerializeField] private AudioSource _bgmAudioSource;
         [SerializeField] private float _targetBgmVolume = 0.80f;
 
         [Header("Scene Navigation")]
+        [SerializeField] private string _introCinematicSceneName = "02_IntroCinematic";
         [SerializeField] private string _gameplaySceneName = "SampleScene";
         [SerializeField] private string _saveFileName = "cavesouls_save01.dat";
 
@@ -49,12 +58,29 @@ namespace CaveSouls.Features.UI
         private float _stateTimer;
         private int _selectedIndex;
         private bool _hasSaveFile;
+        private bool _isStartingNewGame;
         private bool _asyncLoadTriggered;
         private float _navCooldownTimer;
 
         private static readonly Color SelectedTextColor = new Color(1.0f, 0.95f, 0.82f, 1.0f);
         private static readonly Color UnselectedTextColor = new Color(0.68f, 0.68f, 0.72f, 0.85f);
         private static readonly Color DisabledTextColor = new Color(0.32f, 0.32f, 0.35f, 0.45f);
+
+        private static readonly string[] EnglishButtonTitles =
+        {
+            "C O N T I N U E",
+            "N E W   G A M E",
+            "S E T T I N G S",
+            "E X I T   G A M E"
+        };
+
+        private static readonly string[] SpanishButtonTitles =
+        {
+            "C O N T I N U A R",
+            "N U E V O   J U E G O",
+            "O P C I O N E S",
+            "S A L I R   D E L   J U E G O"
+        };
 
         private void Awake()
         {
@@ -69,6 +95,7 @@ namespace CaveSouls.Features.UI
             if (_newGameButton != null) _newGameButton.onClick.AddListener(OnNewGameClicked);
             if (_settingsButton != null) _settingsButton.onClick.AddListener(OnSettingsClicked);
             if (_exitButton != null) _exitButton.onClick.AddListener(OnExitClicked);
+            if (_languageToggleButton != null) _languageToggleButton.onClick.AddListener(OnToggleLanguageClicked);
 
             _selectedIndex = _hasSaveFile ? 0 : 1;
 
@@ -88,6 +115,7 @@ namespace CaveSouls.Features.UI
             SetGroup(_menuButtonsGroup, 0f, false);
             SetGroup(_settingsPanelGroup, 0f, false);
 
+            RefreshLocalizedTexts();
             RefreshButtonVisuals();
         }
 
@@ -123,7 +151,6 @@ namespace CaveSouls.Features.UI
                     break;
 
                 case MenuState.WaitingForAnyButton:
-                    // Smooth Souls-like breathing pulse on "PRESS ANY BUTTON"
                     float pulse = 0.35f + 0.65f * (0.5f + 0.5f * Mathf.Sin(_stateTimer * 2.4f));
                     SetGroup(_pressAnyButtonGroup, pulse, false);
 
@@ -142,11 +169,7 @@ namespace CaveSouls.Features.UI
                     break;
 
                 case MenuState.SettingsPanelActive:
-                    if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame ||
-                        Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame)
-                    {
-                        OnCloseSettingsClicked();
-                    }
+                    HandleSettingsPanelInput();
                     break;
 
                 case MenuState.TransitioningToGame:
@@ -159,7 +182,7 @@ namespace CaveSouls.Features.UI
                     if (_stateTimer >= 1.15f && !_asyncLoadTriggered)
                     {
                         _asyncLoadTriggered = true;
-                        LoadGameplayScene();
+                        LoadTargetScene();
                     }
                     break;
             }
@@ -168,6 +191,7 @@ namespace CaveSouls.Features.UI
         public void OnContinueClicked()
         {
             if (!_hasSaveFile || _state == MenuState.TransitioningToGame) return;
+            _isStartingNewGame = false;
             _state = MenuState.TransitioningToGame;
             _stateTimer = 0f;
         }
@@ -175,6 +199,7 @@ namespace CaveSouls.Features.UI
         public void OnNewGameClicked()
         {
             if (_state == MenuState.TransitioningToGame) return;
+            _isStartingNewGame = true;
             _state = MenuState.TransitioningToGame;
             _stateTimer = 0f;
         }
@@ -186,6 +211,13 @@ namespace CaveSouls.Features.UI
             SetGroup(_settingsPanelGroup, 1f, true);
             _state = MenuState.SettingsPanelActive;
             _stateTimer = 0f;
+            RefreshLocalizedTexts();
+        }
+
+        public void OnToggleLanguageClicked()
+        {
+            GameLocalizationService.ToggleLanguage();
+            RefreshLocalizedTexts();
         }
 
         public void OnCloseSettingsClicked()
@@ -203,6 +235,44 @@ namespace CaveSouls.Features.UI
 #else
             Application.Quit();
 #endif
+        }
+
+        private void HandleSettingsPanelInput()
+        {
+            if (Keyboard.current != null)
+            {
+                if (Keyboard.current.escapeKey.wasPressedThisFrame)
+                {
+                    OnCloseSettingsClicked();
+                    return;
+                }
+
+                if (Keyboard.current.leftArrowKey.wasPressedThisFrame ||
+                    Keyboard.current.rightArrowKey.wasPressedThisFrame ||
+                    Keyboard.current.aKey.wasPressedThisFrame ||
+                    Keyboard.current.dKey.wasPressedThisFrame ||
+                    Keyboard.current.enterKey.wasPressedThisFrame ||
+                    Keyboard.current.spaceKey.wasPressedThisFrame)
+                {
+                    OnToggleLanguageClicked();
+                }
+            }
+
+            if (Gamepad.current != null)
+            {
+                if (Gamepad.current.buttonEast.wasPressedThisFrame)
+                {
+                    OnCloseSettingsClicked();
+                    return;
+                }
+
+                if (Gamepad.current.dpad.left.wasPressedThisFrame ||
+                    Gamepad.current.dpad.right.wasPressedThisFrame ||
+                    Gamepad.current.buttonSouth.wasPressedThisFrame)
+                {
+                    OnToggleLanguageClicked();
+                }
+            }
         }
 
         private void HandleKeyboardAndGamepadMenuNavigation()
@@ -250,6 +320,52 @@ namespace CaveSouls.Features.UI
             }
         }
 
+        private void RefreshLocalizedTexts()
+        {
+            bool isSpanish = GameLocalizationService.CurrentLanguage == GameLanguage.Spanish;
+            string[] titles = isSpanish ? SpanishButtonTitles : EnglishButtonTitles;
+
+            if (_buttonLabels != null)
+            {
+                int count = Mathf.Min(_buttonLabels.Length, titles.Length);
+                for (int i = 0; i < count; i++)
+                {
+                    if (_buttonLabels[i] != null)
+                    {
+                        _buttonLabels[i].text = titles[i];
+                    }
+                }
+            }
+
+            if (_pressAnyButtonLabel != null)
+            {
+                _pressAnyButtonLabel.text = isSpanish
+                    ? "-  P R E S I O N A   C U A L Q U I E R   B O T Ó N  -"
+                    : "-  P R E S S   A N Y   B U T T O N  -";
+            }
+
+            if (_settingsHeaderLabel != null)
+            {
+                _settingsHeaderLabel.text = isSpanish
+                    ? "O P C I O N E S   D E   J U E G O   Y   A U D I O"
+                    : "G A M E   &   A U D I O   S E T T I N G S";
+            }
+
+            if (_languageButtonLabel != null)
+            {
+                _languageButtonLabel.text = isSpanish
+                    ? "I D I O M A   ( L A N G U A G E ) :     <   E S P A Ñ O L   >"
+                    : "L A N G U A G E   ( I D I O M A ) :     <   E N G L I S H   >";
+            }
+
+            if (_backButtonLabel != null)
+            {
+                _backButtonLabel.text = isSpanish
+                    ? "V O L V E R   [ E S C ]"
+                    : "B A C K   [ E S C ]";
+            }
+        }
+
         private void RefreshButtonVisuals()
         {
             if (_buttonLabels == null) return;
@@ -287,11 +403,12 @@ namespace CaveSouls.Features.UI
             return false;
         }
 
-        private void LoadGameplayScene()
+        private void LoadTargetScene()
         {
-            if (Application.CanStreamedLevelBeLoaded(_gameplaySceneName))
+            string targetScene = _isStartingNewGame ? _introCinematicSceneName : _gameplaySceneName;
+            if (Application.CanStreamedLevelBeLoaded(targetScene))
             {
-                SceneManager.LoadSceneAsync(_gameplaySceneName);
+                SceneManager.LoadSceneAsync(targetScene);
             }
             else if (SceneManager.sceneCountInBuildSettings > 2)
             {
@@ -309,7 +426,7 @@ namespace CaveSouls.Features.UI
         private static readonly int BeamColorPropertyId = Shader.PropertyToID("_BeamColor");
 
         [SerializeField] private Renderer _godRayRenderer;
-        [SerializeField] private Color _baseBeamColor = new Color(1.30f, 1.45f, 1.68f, 0.24f);
+        [SerializeField] private Color _baseBeamColor = new Color(1.25f, 1.38f, 1.58f, 0.32f);
         [SerializeField] private float _pulseSpeed = 0.65f;
         [SerializeField] private float _driftAmplitude = 0.22f;
 

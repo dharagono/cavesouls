@@ -1,0 +1,152 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a32f95beec4d4024dbf72204e5c043b5, type: 3}
+  m_Name: SO_IntroCinematicData
+  m_EditorClassIdentifier: CaveSouls.UI::CaveSouls.Features.UI.IntroCinematicDataSO
+  _totalDuration: 93.3
+  _slideFadeInDuration: 2
+  _slideFadeOutDuration: 2
+  _bgmClip: {fileID: 8300000, guid: ae5bd22943b8e464ab6bdf06cf901d95, type: 3}
+  _vocalsEnglishClip: {fileID: 8300000, guid: e7985680ba1c2e4469c201d9ccd72ad2, type: 3}
+  _vocalsSpanishClip: {fileID: 8300000, guid: e98c13ced2e7e244b837f8c99ade7e1e, type: 3}
+  _slides:
+  - SlideTexture: {fileID: 2800000, guid: cceadbab39e6463428795ab05e5e5f6e, type: 3}
+    StartTime: 0
+    EndTime: 10.5
+  - SlideTexture: {fileID: 2800000, guid: 54cba88f6de2a604dab130e765255445, type: 3}
+    StartTime: 10.5
+    EndTime: 20.5
+  - SlideTexture: {fileID: 2800000, guid: b888cc3601e5d354ba93566a0383e834, type: 3}
+    StartTime: 20.5
+    EndTime: 30.8
+  - SlideTexture: {fileID: 2800000, guid: 9d9f27fab237831499fb36e73d13c3f1, type: 3}
+    StartTime: 30.8
+    EndTime: 38.6
+  - SlideTexture: {fileID: 2800000, guid: 2b8e7fbf9e783ff49a8e8fd49a78326d, type: 3}
+    StartTime: 38.6
+    EndTime: 46.5
+  - SlideTexture: {fileID: 2800000, guid: 59fe56e131ef03346a111fa7e3e5dd37, type: 3}
+    StartTime: 46.5
+    EndTime: 56.8
+  - SlideTexture: {fileID: 2800000, guid: bf55694ba5d263e4ebce449aa704c086, type: 3}
+    StartTime: 56.8
+    EndTime: 66.6
+  - SlideTexture: {fileID: 2800000, guid: 3d20bbaa6dd748848b089e9c62d3850f, type: 3}
+    StartTime: 66.6
+    EndTime: 74.5
+  - SlideTexture: {fileID: 2800000, guid: ae7c13174c4304944a969e7f86d79c45, type: 3}
+    StartTime: 74.5
+    EndTime: 83.6
+  - SlideTexture: {fileID: 2800000, guid: 04cd5f1407de5e440be50904feedad04, type: 3}
+    StartTime: 83.6
+    EndTime: 93.3
+  _subtitleCues:
+  - StartTime: 0.7
+    EndTime: 3.3
+    TextEnglish: In the beginning...
+    TextSpanish: En el principio...
+  - StartTime: 4
+    EndTime: 6.3
+    TextEnglish: In the beginning... there was no weight.
+    TextSpanish: "En el principio... no hab\xEDa peso."
+  - StartTime: 6.8
+    EndTime: 10.1
+    TextEnglish: Only... the flow.
+    TextSpanish: Solo... el flujo.
+  - StartTime: 11.2
+    EndTime: 14.3
+    TextEnglish: But light breeds shadows...
+    TextSpanish: Pero la luz engendra sombras...
+  - StartTime: 14.8
+    EndTime: 16.5
+    TextEnglish: But light breeds shadows... and fear...
+    TextSpanish: Pero la luz engendra sombras... y el miedo...
+  - StartTime: 16.8
+    EndTime: 20.1
+    TextEnglish: ...is the poison of rulers.
+    TextSpanish: ...es el veneno de los gobernantes.
+  - StartTime: 21.1
+    EndTime: 27.1
+    TextEnglish: To protect his own domain... he decreed the end of the cycle...
+    TextSpanish: "Para proteger su propio dominio... decret\xF3 el fin del ciclo..."
+  - StartTime: 27.5
+    EndTime: 30.3
+    TextEnglish: ...and sealed our sky.
+    TextSpanish: "...y sell\xF3 nuestro cielo."
+  - StartTime: 31.5
+    EndTime: 35.3
+    TextEnglish: He left behind his most loyal Sentinel...
+    TextSpanish: "Dej\xF3 atr\xE1s a su Centinela m\xE1s leal..."
+  - StartTime: 35.6
+    EndTime: 38.3
+    TextEnglish: ...to guard the heights.
+    TextSpanish: ...para custodiar las alturas.
+  - StartTime: 39
+    EndTime: 42.1
+    TextEnglish: Trapped beneath the seal...
+    TextSpanish: Atrapados bajo el sello...
+  - StartTime: 42.6
+    EndTime: 46.1
+    TextEnglish: ...we were stripped of birth.
+    TextSpanish: ...fuimos despojados del nacimiento.
+  - StartTime: 47.2
+    EndTime: 49.6
+    TextEnglish: We grew dense.
+    TextSpanish: Nos volvimos densos.
+  - StartTime: 50.2
+    EndTime: 56.4
+    TextEnglish: Fusing together... solidifying our essence into prisons of crystal... mud... and stone.
+    TextSpanish: "Fusion\xE1ndonos... solidificando nuestra esencia en prisiones de cristal... lodo... y piedra."
+  - StartTime: 57.3
+    EndTime: 59.3
+    TextEnglish: And yet...
+    TextSpanish: Y sin embargo...
+  - StartTime: 59.7
+    EndTime: 62.7
+    TextEnglish: And yet... in the lowest stratum...
+    TextSpanish: "Y sin embargo... en el estrato m\xE1s profundo..."
+  - StartTime: 63
+    EndTime: 66.2
+    TextEnglish: ...where despair reigns...
+    TextSpanish: "...donde reina la desesperaci\xF3n..."
+  - StartTime: 67.1
+    EndTime: 71.5
+    TextEnglish: ...an ancient spark refuses to fade.
+    TextSpanish: ...una chispa ancestral se niega a apagarse.
+  - StartTime: 72
+    EndTime: 74.1
+    TextEnglish: A Lumen.
+    TextSpanish: Un Lumen.
+  - StartTime: 75.3
+    EndTime: 77
+    TextEnglish: Rise.
+    TextSpanish: "\xC1lzate."
+  - StartTime: 77.3
+    EndTime: 79.9
+    TextEnglish: Rise. Defy the Sentinel.
+    TextSpanish: "\xC1lzate. Desaf\xEDa al Centinela."
+  - StartTime: 80.3
+    EndTime: 83.1
+    TextEnglish: Reclaim the heights.
+    TextSpanish: Reclama las alturas.
+  - StartTime: 84.4
+    EndTime: 86.4
+    TextEnglish: And discover...
+    TextSpanish: Y descubre...
+  - StartTime: 86.7
+    EndTime: 89.2
+    TextEnglish: And discover... what was stolen from us...
+    TextSpanish: Y descubre... lo que nos fue arrebatado...
+  - StartTime: 89.5
+    EndTime: 92.6
+    TextEnglish: ...beyond the sky of stone.
+    TextSpanish: "...m\xE1s all\xE1 del cielo de piedra."

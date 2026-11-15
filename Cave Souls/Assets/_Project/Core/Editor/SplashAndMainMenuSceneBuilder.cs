@@ -20,6 +20,7 @@ namespace CaveSouls.Core.Editor
         private const string AudioDir = "Assets/_Project/Art/Audio";
         private const string SplashScenePath = ScenesDir + "/00_SplashScreen.unity";
         private const string MainMenuScenePath = ScenesDir + "/01_MainMenu.unity";
+        private const string IntroCinematicScenePath = ScenesDir + "/02_IntroCinematic.unity";
 
         [MenuItem("CaveSouls/Build Splash & Main Menu Scenes")]
         public static void BuildAll()
@@ -37,14 +38,16 @@ namespace CaveSouls.Core.Editor
                 out Sprite uiDarkBannerSprite);
 
             VolumeProfile eldenRingProfile = CreateOrUpdateEldenRingVolumeProfile();
+            IntroCinematicDataSO introData = CreateOrUpdateIntroCinematicDataSO();
 
             BuildSplashScreenScene(unityCubeEmblemSprite);
+            BuildIntroCinematicScene(introData, uiDarkBannerSprite);
             BuildMainMenuScene(rockMat, godRayMat, mistParticleMat, emberParticleMat, eldenRingProfile, uiDarkBannerSprite);
             RegisterScenesInBuildSettings();
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log("[CaveSouls] Successfully built 00_SplashScreen.unity and Elden Ring / Dark Souls LookDev 01_MainMenu.unity (with looping OST)!");
+            Debug.Log("[CaveSouls] Successfully built 00_SplashScreen.unity, 01_MainMenu.unity (with EN/ES Settings), and 02_IntroCinematic.unity (1:33 Intro)!");
         }
 
         private static void EnsureDirectories()
@@ -89,6 +92,21 @@ namespace CaveSouls.Core.Editor
                     ti.alphaSource = TextureImporterAlphaSource.FromInput;
                     ti.wrapMode = TextureWrapMode.Repeat;
                     ti.anisoLevel = 8;
+                    ti.SaveAndReimport();
+                }
+            }
+
+            // Ensure all 10 2.7K (2752x1536) Intro Cinematic slides have maxTextureSize = 4096 so Sprite rect is valid
+            for (int i = 1; i <= 10; i++)
+            {
+                string slidePath = $"Assets/_Project/Art/UI/IntroCinematic/UI_IntroSlide_{i:D2}.png";
+                if (AssetImporter.GetAtPath(slidePath) is TextureImporter ti &&
+                    (ti.textureType != TextureImporterType.Sprite || ti.maxTextureSize < 4096))
+                {
+                    ti.textureType = TextureImporterType.Sprite;
+                    ti.spriteImportMode = SpriteImportMode.Single;
+                    ti.maxTextureSize = 4096;
+                    ti.mipmapEnabled = false;
                     ti.SaveAndReimport();
                 }
             }
@@ -776,11 +794,11 @@ namespace CaveSouls.Core.Editor
                 btnLabels[i] = lbl;
             }
 
-            // Settings Sub-Panel
+            // Settings Sub-Panel (with Interactive Language Selector EN / ES)
             GameObject settingsObj = CreateUIObject("SettingsPanelGroup", canvasObj.transform);
             RectTransform settingsRect = settingsObj.GetComponent<RectTransform>();
             settingsRect.anchoredPosition = new Vector2(0f, -260f);
-            settingsRect.sizeDelta = new Vector2(520f, 240f);
+            settingsRect.sizeDelta = new Vector2(560f, 250f);
             CanvasGroup settingsCg = settingsObj.AddComponent<CanvasGroup>();
             settingsCg.alpha = 0f;
             settingsCg.interactable = false;
@@ -788,24 +806,43 @@ namespace CaveSouls.Core.Editor
             Image settingsBg = settingsObj.AddComponent<Image>();
             settingsBg.color = new Color(0.02f, 0.022f, 0.03f, 0.94f);
 
-            CreateOrnamentalRuleLine("SettingsTopRule", settingsObj.transform, new Vector2(0f, 118f), new Vector2(480f, 1.5f));
-            CreateOrnamentalRuleLine("SettingsBottomRule", settingsObj.transform, new Vector2(0f, -118f), new Vector2(480f, 1.5f));
+            CreateOrnamentalRuleLine("SettingsTopRule", settingsObj.transform, new Vector2(0f, 122f), new Vector2(510f, 1.5f));
+            CreateOrnamentalRuleLine("SettingsBottomRule", settingsObj.transform, new Vector2(0f, -122f), new Vector2(510f, 1.5f));
 
-            GameObject settingsInfoObj = CreateUIObject("SettingsInfoLabel", settingsObj.transform);
-            RectTransform settingsInfoRect = settingsInfoObj.GetComponent<RectTransform>();
-            settingsInfoRect.anchoredPosition = new Vector2(0f, 25f);
-            settingsInfoRect.sizeDelta = new Vector2(460f, 100f);
-            Text settingsInfoTxt = settingsInfoObj.AddComponent<Text>();
-            settingsInfoTxt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            settingsInfoTxt.text = "A U D I O   &   D I S P L A Y\n\nMaster Volume: 100%   |   Resolution: Native";
-            settingsInfoTxt.fontSize = 18;
-            settingsInfoTxt.alignment = TextAnchor.MiddleCenter;
-            settingsInfoTxt.color = new Color(0.85f, 0.85f, 0.88f, 1f);
+            GameObject settingsHeaderObj = CreateUIObject("SettingsHeaderLabel", settingsObj.transform);
+            RectTransform settingsHeaderRect = settingsHeaderObj.GetComponent<RectTransform>();
+            settingsHeaderRect.anchoredPosition = new Vector2(0f, 75f);
+            settingsHeaderRect.sizeDelta = new Vector2(500f, 40f);
+            Text settingsHeaderTxt = settingsHeaderObj.AddComponent<Text>();
+            settingsHeaderTxt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            settingsHeaderTxt.text = "G A M E   &   A U D I O   S E T T I N G S";
+            settingsHeaderTxt.fontSize = 19;
+            settingsHeaderTxt.alignment = TextAnchor.MiddleCenter;
+            settingsHeaderTxt.color = new Color(0.92f, 0.88f, 0.78f, 1f);
+
+            // Interactive Language Selector Button (< ENGLISH / ESPAÑOL >)
+            GameObject langBtnObj = CreateUIObject("Btn_ToggleLanguage", settingsObj.transform);
+            RectTransform langBtnRect = langBtnObj.GetComponent<RectTransform>();
+            langBtnRect.anchoredPosition = new Vector2(0f, 8f);
+            langBtnRect.sizeDelta = new Vector2(480f, 46f);
+            Image langBtnImg = langBtnObj.AddComponent<Image>();
+            langBtnImg.color = new Color(0.12f, 0.13f, 0.17f, 0.85f);
+            Button langBtn = langBtnObj.AddComponent<Button>();
+            langBtn.targetGraphic = langBtnImg;
+
+            GameObject langLblObj = CreateUIObject("LanguageLabel", langBtnObj.transform);
+            StretchFullScreen(langLblObj.GetComponent<RectTransform>());
+            Text langLbl = langLblObj.AddComponent<Text>();
+            langLbl.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            langLbl.text = "L A N G U A G E   ( I D I O M A ) :     <   E N G L I S H   >";
+            langLbl.fontSize = 18;
+            langLbl.alignment = TextAnchor.MiddleCenter;
+            langLbl.color = new Color(1.0f, 0.95f, 0.82f, 1f);
 
             GameObject backBtnObj = CreateUIObject("Btn_CloseSettings", settingsObj.transform);
             RectTransform backBtnRect = backBtnObj.GetComponent<RectTransform>();
-            backBtnRect.anchoredPosition = new Vector2(0f, -65f);
-            backBtnRect.sizeDelta = new Vector2(240f, 40f);
+            backBtnRect.anchoredPosition = new Vector2(0f, -68f);
+            backBtnRect.sizeDelta = new Vector2(260f, 40f);
             Image backBtnImg = backBtnObj.AddComponent<Image>();
             backBtnImg.color = new Color(0.15f, 0.15f, 0.18f, 0.8f);
             Button backBtn = backBtnObj.AddComponent<Button>();
@@ -842,6 +879,11 @@ namespace CaveSouls.Core.Editor
             so.FindProperty("_newGameButton").objectReferenceValue = buttons[1];
             so.FindProperty("_settingsButton").objectReferenceValue = buttons[2];
             so.FindProperty("_exitButton").objectReferenceValue = buttons[3];
+            so.FindProperty("_pressAnyButtonLabel").objectReferenceValue = pressAnyTxt;
+            so.FindProperty("_languageToggleButton").objectReferenceValue = langBtn;
+            so.FindProperty("_languageButtonLabel").objectReferenceValue = langLbl;
+            so.FindProperty("_settingsHeaderLabel").objectReferenceValue = settingsHeaderTxt;
+            so.FindProperty("_backButtonLabel").objectReferenceValue = backLbl;
             so.FindProperty("_bgmAudioSource").objectReferenceValue = bgmSource;
             so.FindProperty("_targetBgmVolume").floatValue = 0.80f;
 
@@ -851,12 +893,260 @@ namespace CaveSouls.Core.Editor
             {
                 labelsProp.GetArrayElementAtIndex(i).objectReferenceValue = btnLabels[i];
             }
+            so.FindProperty("_introCinematicSceneName").stringValue = "02_IntroCinematic";
             so.FindProperty("_gameplaySceneName").stringValue = "SampleScene";
             so.ApplyModifiedPropertiesWithoutUndo();
 
             UnityEditor.Events.UnityEventTools.AddPersistentListener(backBtn.onClick, menuCtrl.OnCloseSettingsClicked);
+            UnityEditor.Events.UnityEventTools.AddPersistentListener(langBtn.onClick, menuCtrl.OnToggleLanguageClicked);
 
             EditorSceneManager.SaveScene(scene, MainMenuScenePath);
+        }
+
+        private static IntroCinematicDataSO CreateOrUpdateIntroCinematicDataSO()
+        {
+            string soPath = SettingsDir + "/SO_IntroCinematicData.asset";
+            IntroCinematicDataSO data = AssetDatabase.LoadAssetAtPath<IntroCinematicDataSO>(soPath);
+            if (data == null)
+            {
+                data = ScriptableObject.CreateInstance<IntroCinematicDataSO>();
+                AssetDatabase.CreateAsset(data, soPath);
+            }
+
+            AudioClip bgmClip = AssetDatabase.LoadAssetAtPath<AudioClip>(AudioDir + "/IntroCinematic/BGM_WeightOfTheSeal.mp3");
+            AudioClip voEnClip = AssetDatabase.LoadAssetAtPath<AudioClip>(AudioDir + "/IntroCinematic/VO_IntroVocals_English.mp3");
+            AudioClip voEsClip = AssetDatabase.LoadAssetAtPath<AudioClip>(AudioDir + "/IntroCinematic/VO_IntroVocals_Spanish.mp3");
+
+            // Acoustic-matched 10-slide windows across the 93.3s (1:33) timeline
+            (float start, float end)[] slideWindows =
+            {
+                (0.0f,  10.5f), // Clip 1 (01.png)
+                (10.5f, 20.5f), // Clip 2 (02.png)
+                (20.5f, 30.8f), // Clip 3 (03.png)
+                (30.8f, 38.6f), // Clip 4 (04.png)
+                (38.6f, 46.5f), // Clip 5 (05.png)
+                (46.5f, 56.8f), // Clip 6 (06.png)
+                (56.8f, 66.6f), // Clip 7 (07.png)
+                (66.6f, 74.5f), // Clip 8 (08.png)
+                (74.5f, 83.6f), // Clip 9 (09.png)
+                (83.6f, 93.3f)  // Clip 10 (10.png)
+            };
+
+            // Acoustic-synchronized subtitle cues (EN & ES) matching the real voice-over recordings
+            (float start, float end, string en, string es)[] subtitleScript =
+            {
+                // Clip 1 (0.0s - 10.5s)
+                (0.7f,  3.3f,  "In the beginning...", "En el principio..."),
+                (4.0f,  6.3f,  "In the beginning... there was no weight.", "En el principio... no había peso."),
+                (6.8f,  10.1f, "Only... the flow.", "Solo... el flujo."),
+
+                // Clip 2 (10.5s - 20.5s)
+                (11.2f, 14.3f, "But light breeds shadows...", "Pero la luz engendra sombras..."),
+                (14.8f, 16.5f, "But light breeds shadows... and fear...", "Pero la luz engendra sombras... y el miedo..."),
+                (16.8f, 20.1f, "...is the poison of rulers.", "...es el veneno de los gobernantes."),
+
+                // Clip 3 (20.5s - 30.8s)
+                (21.1f, 27.1f, "To protect his own domain... he decreed the end of the cycle...", "Para proteger su propio dominio... decretó el fin del ciclo..."),
+                (27.5f, 30.3f, "...and sealed our sky.", "...y selló nuestro cielo."),
+
+                // Clip 4 (30.8s - 38.6s)
+                (31.5f, 35.3f, "He left behind his most loyal Sentinel...", "Dejó atrás a su Centinela más leal..."),
+                (35.6f, 38.3f, "...to guard the heights.", "...para custodiar las alturas."),
+
+                // Clip 5 (38.6s - 46.5s)
+                (39.0f, 42.1f, "Trapped beneath the seal...", "Atrapados bajo el sello..."),
+                (42.6f, 46.1f, "...we were stripped of birth.", "...fuimos despojados del nacimiento."),
+
+                // Clip 6 (46.5s - 56.8s)
+                (47.2f, 49.6f, "We grew dense.", "Nos volvimos densos."),
+                (50.2f, 56.4f, "Fusing together... solidifying our essence into prisons of crystal... mud... and stone.", "Fusionándonos... solidificando nuestra esencia en prisiones de cristal... lodo... y piedra."),
+
+                // Clip 7 (56.8s - 66.6s)
+                (57.3f, 59.3f, "And yet...", "Y sin embargo..."),
+                (59.7f, 62.7f, "And yet... in the lowest stratum...", "Y sin embargo... en el estrato más profundo..."),
+                (63.0f, 66.2f, "...where despair reigns...", "...donde reina la desesperación..."),
+
+                // Clip 8 (66.6s - 74.5s)
+                (67.1f, 71.5f, "...an ancient spark refuses to fade.", "...una chispa ancestral se niega a apagarse."),
+                (72.0f, 74.1f, "A Lumen.", "Un Lumen."),
+
+                // Clip 9 (74.5s - 83.6s)
+                (75.3f, 77.0f, "Rise.", "Álzate."),
+                (77.3f, 79.9f, "Rise. Defy the Sentinel.", "Álzate. Desafía al Centinela."),
+                (80.3f, 83.1f, "Reclaim the heights.", "Reclama las alturas."),
+
+                // Clip 10 (83.6s - 93.3s, voice ends ~92.4s followed by fading echo)
+                (84.4f, 86.4f, "And discover...", "Y descubre..."),
+                (86.7f, 89.2f, "And discover... what was stolen from us...", "Y descubre... lo que nos fue arrebatado..."),
+                (89.5f, 92.6f, "...beyond the sky of stone.", "...más allá del cielo de piedra.")
+            };
+
+            SerializedObject so = new SerializedObject(data);
+            so.FindProperty("_totalDuration").floatValue = 93.3f;
+            so.FindProperty("_slideFadeInDuration").floatValue = 2.0f;
+            so.FindProperty("_slideFadeOutDuration").floatValue = 2.0f;
+            so.FindProperty("_bgmClip").objectReferenceValue = bgmClip;
+            so.FindProperty("_vocalsEnglishClip").objectReferenceValue = voEnClip;
+            so.FindProperty("_vocalsSpanishClip").objectReferenceValue = voEsClip;
+
+            SerializedProperty slidesProp = so.FindProperty("_slides");
+            slidesProp.arraySize = 10;
+            for (int i = 0; i < 10; i++)
+            {
+                string texPath = $"Assets/_Project/Art/UI/IntroCinematic/UI_IntroSlide_{(i + 1):D2}.png";
+                Texture2D tex = AssetDatabase.LoadAssetAtPath<Texture2D>(texPath);
+                SerializedProperty elem = slidesProp.GetArrayElementAtIndex(i);
+                elem.FindPropertyRelative("SlideTexture").objectReferenceValue = tex;
+                elem.FindPropertyRelative("StartTime").floatValue = slideWindows[i].start;
+                elem.FindPropertyRelative("EndTime").floatValue = slideWindows[i].end;
+            }
+
+            SerializedProperty cuesProp = so.FindProperty("_subtitleCues");
+            cuesProp.arraySize = subtitleScript.Length;
+            for (int i = 0; i < subtitleScript.Length; i++)
+            {
+                SerializedProperty elem = cuesProp.GetArrayElementAtIndex(i);
+                elem.FindPropertyRelative("StartTime").floatValue = subtitleScript[i].start;
+                elem.FindPropertyRelative("EndTime").floatValue = subtitleScript[i].end;
+                elem.FindPropertyRelative("TextEnglish").stringValue = subtitleScript[i].en;
+                elem.FindPropertyRelative("TextSpanish").stringValue = subtitleScript[i].es;
+            }
+
+            so.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(data);
+            return data;
+        }
+
+        private static void BuildIntroCinematicScene(IntroCinematicDataSO introData, Sprite uiDarkBannerSprite)
+        {
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            // 1. Main Camera (Pure Black Background)
+            GameObject camObj = new GameObject("Main Camera");
+            camObj.tag = "MainCamera";
+            Camera cam = camObj.AddComponent<Camera>();
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = Color.black;
+            cam.orthographic = true;
+            camObj.AddComponent<AudioListener>();
+            camObj.AddComponent<UniversalAdditionalCameraData>();
+
+            CreateEventSystem();
+
+            // 2. Dual AudioSources: BGM ("Weight_of_the_Seal.mp3") + Localized Vocals ("intro_vocals_english/spanish.mp3")
+            GameObject audioRoot = new GameObject("IntroCinematicAudio");
+            GameObject bgmObj = new GameObject("AudioSource_BGM_WeightOfTheSeal");
+            bgmObj.transform.SetParent(audioRoot.transform, false);
+            AudioSource bgmSource = bgmObj.AddComponent<AudioSource>();
+            bgmSource.playOnAwake = false;
+            bgmSource.loop = false;
+            bgmSource.spatialBlend = 0f;
+            bgmSource.volume = 0.78f;
+
+            GameObject voObj = new GameObject("AudioSource_VO_LocalizedNarrator");
+            voObj.transform.SetParent(audioRoot.transform, false);
+            AudioSource voSource = voObj.AddComponent<AudioSource>();
+            voSource.playOnAwake = false;
+            voSource.loop = false;
+            voSource.spatialBlend = 0f;
+            voSource.volume = 1.0f;
+
+            // 3. UI Canvas (1920x1080)
+            GameObject canvasObj = CreateStandardCanvas("IntroCinematicCanvas", cam);
+
+            // Pure Black Backdrop (RawImage renders immediately in ScreenSpaceCamera without requiring a Sprite sub-asset)
+            GameObject bgObj = CreateUIObject("BlackBackdrop", canvasObj.transform);
+            RectTransform bgRect = bgObj.GetComponent<RectTransform>();
+            bgRect.anchoredPosition = Vector2.zero;
+            bgRect.sizeDelta = new Vector2(1920f, 1080f);
+            RawImage bgImg = bgObj.AddComponent<RawImage>();
+            bgImg.color = Color.black;
+
+            // Artwork Slide Container (with 2s Fade-In / 2s Fade-Out CanvasGroup & Ken Burns RectTransform)
+            GameObject slideObj = CreateUIObject("CinematicSlideImage", canvasObj.transform);
+            RectTransform slideRect = slideObj.GetComponent<RectTransform>();
+            slideRect.anchoredPosition = Vector2.zero;
+            slideRect.sizeDelta = new Vector2(1920f, 1080f);
+            CanvasGroup slideCg = slideObj.AddComponent<CanvasGroup>();
+            slideCg.alpha = 1f;
+            RawImage slideImg = slideObj.AddComponent<RawImage>();
+            slideImg.texture = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/_Project/Art/UI/IntroCinematic/UI_IntroSlide_01.png");
+            slideImg.color = Color.white;
+
+            // Subtitle Banner & Text (Bottom Cinema Bar)
+            GameObject subGroupObj = CreateUIObject("SubtitleBarGroup", canvasObj.transform);
+            RectTransform subGroupRect = subGroupObj.GetComponent<RectTransform>();
+            subGroupRect.anchoredPosition = new Vector2(0f, -415f);
+            subGroupRect.sizeDelta = new Vector2(1460f, 110f);
+            CanvasGroup subCg = subGroupObj.AddComponent<CanvasGroup>();
+            subCg.alpha = 1f;
+
+            Image subBannerImg = subGroupObj.AddComponent<Image>();
+            subBannerImg.sprite = uiDarkBannerSprite;
+            subBannerImg.color = new Color(0.01f, 0.012f, 0.016f, 0.82f);
+            subBannerImg.raycastTarget = false;
+
+            CreateOrnamentalRuleLine("SubtitleTopGoldRule", subGroupObj.transform, new Vector2(0f, 52f), new Vector2(980f, 1.5f));
+            CreateOrnamentalRuleLine("SubtitleBottomGoldRule", subGroupObj.transform, new Vector2(0f, -52f), new Vector2(980f, 1.5f));
+
+            GameObject subTextObj = CreateUIObject("SubtitleText", subGroupObj.transform);
+            RectTransform subTextRect = subTextObj.GetComponent<RectTransform>();
+            subTextRect.anchoredPosition = Vector2.zero;
+            subTextRect.sizeDelta = new Vector2(1320f, 94f);
+            Text subTxt = subTextObj.AddComponent<Text>();
+            subTxt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            subTxt.text = "In the beginning... there was no weight. Only... the flow.";
+            subTxt.fontSize = 26;
+            subTxt.fontStyle = FontStyle.Italic;
+            subTxt.alignment = TextAnchor.MiddleCenter;
+            subTxt.color = new Color(0.93f, 0.90f, 0.83f, 1.0f);
+
+            // Skip Prompt (Bottom Right Corner)
+            GameObject skipObj = CreateUIObject("SkipPromptGroup", canvasObj.transform);
+            RectTransform skipRect = skipObj.GetComponent<RectTransform>();
+            skipRect.anchoredPosition = new Vector2(680f, -495f);
+            skipRect.sizeDelta = new Vector2(440f, 36f);
+            CanvasGroup skipCg = skipObj.AddComponent<CanvasGroup>();
+            skipCg.alpha = 0f;
+            Text skipTxt = skipObj.AddComponent<Text>();
+            skipTxt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            skipTxt.text = "HOLD [SPACE / ESC] TO SKIP";
+            skipTxt.fontSize = 16;
+            skipTxt.alignment = TextAnchor.MiddleRight;
+            skipTxt.color = new Color(0.75f, 0.72f, 0.66f, 0.85f);
+
+            // Final Black Fade Overlay
+            GameObject finalBlackObj = CreateUIObject("FinalBlackFadeGroup", canvasObj.transform);
+            RectTransform finalBlackRect = finalBlackObj.GetComponent<RectTransform>();
+            finalBlackRect.anchoredPosition = Vector2.zero;
+            finalBlackRect.sizeDelta = new Vector2(1920f, 1080f);
+            CanvasGroup finalBlackCg = finalBlackObj.AddComponent<CanvasGroup>();
+            finalBlackCg.alpha = 0f;
+            finalBlackCg.blocksRaycasts = false;
+            Image finalBlackImg = finalBlackObj.AddComponent<Image>();
+            finalBlackImg.color = Color.black;
+            finalBlackImg.raycastTarget = false;
+
+            Canvas.ForceUpdateCanvases();
+
+            // Attach & Wire IntroCinematicController
+            IntroCinematicController ctrl = canvasObj.AddComponent<IntroCinematicController>();
+            SerializedObject so = new SerializedObject(ctrl);
+            so.FindProperty("_cinematicData").objectReferenceValue = introData;
+            so.FindProperty("_nextGameplaySceneName").stringValue = "SampleScene";
+            so.FindProperty("_slideRawImage").objectReferenceValue = slideImg;
+            so.FindProperty("_slideRect").objectReferenceValue = slideRect;
+            so.FindProperty("_slideCanvasGroup").objectReferenceValue = slideCg;
+            so.FindProperty("_subtitleGroup").objectReferenceValue = subCg;
+            so.FindProperty("_subtitleText").objectReferenceValue = subTxt;
+            so.FindProperty("_skipPromptGroup").objectReferenceValue = skipCg;
+            so.FindProperty("_skipPromptText").objectReferenceValue = skipTxt;
+            so.FindProperty("_finalBlackFadeGroup").objectReferenceValue = finalBlackCg;
+            so.FindProperty("_bgmAudioSource").objectReferenceValue = bgmSource;
+            so.FindProperty("_vocalsAudioSource").objectReferenceValue = voSource;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            EditorSceneManager.SaveScene(scene, IntroCinematicScenePath);
         }
 
         private static void CreateOrnamentalRuleLine(string name, Transform parent, Vector2 anchoredPos, Vector2 size)
@@ -876,6 +1166,7 @@ namespace CaveSouls.Core.Editor
             {
                 new EditorBuildSettingsScene(SplashScenePath, true),
                 new EditorBuildSettingsScene(MainMenuScenePath, true),
+                new EditorBuildSettingsScene(IntroCinematicScenePath, true),
                 new EditorBuildSettingsScene("Assets/Scenes/SampleScene.unity", true)
             };
         }

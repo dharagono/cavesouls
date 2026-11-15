@@ -17,13 +17,13 @@ namespace CaveSouls.Core.Editor
 
             if (assetPath.Contains("Assets/_Project/Art/UI/"))
             {
-                if (importer.textureType != TextureImporterType.Sprite)
+                if (importer.textureType != TextureImporterType.Sprite || importer.maxTextureSize < 4096)
                 {
                     importer.textureType = TextureImporterType.Sprite;
                     importer.spriteImportMode = SpriteImportMode.Single;
                     importer.alphaIsTransparency = true;
                     importer.mipmapEnabled = false;
-                    importer.maxTextureSize = 2048;
+                    importer.maxTextureSize = 4096;
                 }
                 return;
             }
