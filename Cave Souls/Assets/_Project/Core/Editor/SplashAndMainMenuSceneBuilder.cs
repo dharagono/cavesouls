@@ -1169,12 +1169,12 @@ namespace CaveSouls.Core.Editor
             {
                 // Clip 1 (0.0s - 10.5s)
                 (0.7f,  3.3f,  "In the beginning...", "En el principio..."),
-                (4.0f,  6.3f,  "In the beginning... there was no weight.", "En el principio... no había peso."),
+                (4.0f,  6.3f,  "there was no weight.", "no había peso."),
                 (6.8f,  10.1f, "Only... the flow.", "Solo... el flujo."),
 
                 // Clip 2 (10.5s - 20.5s)
                 (11.2f, 14.3f, "But light breeds shadows...", "Pero la luz engendra sombras..."),
-                (14.8f, 16.5f, "But light breeds shadows... and fear...", "Pero la luz engendra sombras... y el miedo..."),
+                (14.8f, 16.5f, "and fear...", "y el miedo..."),
                 (16.8f, 20.1f, "...is the poison of rulers.", "...es el veneno de los gobernantes."),
 
                 // Clip 3 (20.5s - 30.8s)
@@ -1195,7 +1195,7 @@ namespace CaveSouls.Core.Editor
 
                 // Clip 7 (56.8s - 66.6s)
                 (57.3f, 59.3f, "And yet...", "Y sin embargo..."),
-                (59.7f, 62.7f, "And yet... in the lowest stratum...", "Y sin embargo... en el estrato más profundo..."),
+                (59.7f, 62.7f, "in the lowest stratum...", "en el estrato más profundo..."),
                 (63.0f, 66.2f, "...where despair reigns...", "...donde reina la desesperación..."),
 
                 // Clip 8 (66.6s - 74.5s)
@@ -1204,12 +1204,12 @@ namespace CaveSouls.Core.Editor
 
                 // Clip 9 (74.5s - 83.6s)
                 (75.3f, 77.0f, "Rise.", "Álzate."),
-                (77.3f, 79.9f, "Rise. Defy the Sentinel.", "Álzate. Desafía al Centinela."),
+                (77.3f, 79.9f, "Defy the Sentinel.", "Desafía al Centinela."),
                 (80.3f, 83.1f, "Reclaim the heights.", "Reclama las alturas."),
 
                 // Clip 10 (83.6s - 93.3s, voice ends ~92.4s followed by fading echo)
                 (84.4f, 86.4f, "And discover...", "Y descubre..."),
-                (86.7f, 89.2f, "And discover... what was stolen from us...", "Y descubre... lo que nos fue arrebatado..."),
+                (86.7f, 89.2f, "what was stolen from us...", "...lo que nos fue arrebatado..."),
                 (89.5f, 92.6f, "...beyond the sky of stone.", "...más allá del cielo de piedra.")
             };
 

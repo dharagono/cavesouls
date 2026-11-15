@@ -56,8 +56,8 @@ MonoBehaviour:
     TextSpanish: En el principio...
   - StartTime: 4
     EndTime: 6.3
-    TextEnglish: In the beginning... there was no weight.
-    TextSpanish: "En el principio... no hab\xEDa peso."
+    TextEnglish: there was no weight.
+    TextSpanish: "no hab\xEDa peso."
   - StartTime: 6.8
     EndTime: 10.1
     TextEnglish: Only... the flow.
@@ -68,8 +68,8 @@ MonoBehaviour:
     TextSpanish: Pero la luz engendra sombras...
   - StartTime: 14.8
     EndTime: 16.5
-    TextEnglish: But light breeds shadows... and fear...
-    TextSpanish: Pero la luz engendra sombras... y el miedo...
+    TextEnglish: and fear...
+    TextSpanish: y el miedo...
   - StartTime: 16.8
     EndTime: 20.1
     TextEnglish: ...is the poison of rulers.
@@ -112,8 +112,8 @@ MonoBehaviour:
     TextSpanish: Y sin embargo...
   - StartTime: 59.7
     EndTime: 62.7
-    TextEnglish: And yet... in the lowest stratum...
-    TextSpanish: "Y sin embargo... en el estrato m\xE1s profundo..."
+    TextEnglish: in the lowest stratum...
+    TextSpanish: "en el estrato m\xE1s profundo..."
   - StartTime: 63
     EndTime: 66.2
     TextEnglish: ...where despair reigns...
@@ -132,8 +132,8 @@ MonoBehaviour:
     TextSpanish: "\xC1lzate."
   - StartTime: 77.3
     EndTime: 79.9
-    TextEnglish: Rise. Defy the Sentinel.
-    TextSpanish: "\xC1lzate. Desaf\xEDa al Centinela."
+    TextEnglish: Defy the Sentinel.
+    TextSpanish: "Desaf\xEDa al Centinela."
   - StartTime: 80.3
     EndTime: 83.1
     TextEnglish: Reclaim the heights.
@@ -144,8 +144,8 @@ MonoBehaviour:
     TextSpanish: Y descubre...
   - StartTime: 86.7
     EndTime: 89.2
-    TextEnglish: And discover... what was stolen from us...
-    TextSpanish: Y descubre... lo que nos fue arrebatado...
+    TextEnglish: what was stolen from us...
+    TextSpanish: ...lo que nos fue arrebatado...
   - StartTime: 89.5
     EndTime: 92.6
     TextEnglish: ...beyond the sky of stone.

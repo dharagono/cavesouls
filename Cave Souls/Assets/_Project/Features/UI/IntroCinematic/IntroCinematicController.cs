@@ -63,11 +63,11 @@ namespace CaveSouls.Features.UI
         {
             // Clip 1 (0.0s - 10.5s)
             new IntroSubtitleCue { StartTime = 0.7f,  EndTime = 3.3f,  TextEnglish = "In the beginning...", TextSpanish = "En el principio..." },
-            new IntroSubtitleCue { StartTime = 4.0f,  EndTime = 6.3f,  TextEnglish = "In the beginning... there was no weight.", TextSpanish = "En el principio... no había peso." },
+            new IntroSubtitleCue { StartTime = 4.0f,  EndTime = 6.3f,  TextEnglish = "there was no weight.", TextSpanish = "no había peso." },
             new IntroSubtitleCue { StartTime = 6.8f,  EndTime = 10.1f, TextEnglish = "Only... the flow.", TextSpanish = "Solo... el flujo." },
             // Clip 2 (10.5s - 20.5s)
             new IntroSubtitleCue { StartTime = 11.2f, EndTime = 14.3f, TextEnglish = "But light breeds shadows...", TextSpanish = "Pero la luz engendra sombras..." },
-            new IntroSubtitleCue { StartTime = 14.8f, EndTime = 16.5f, TextEnglish = "But light breeds shadows... and fear...", TextSpanish = "Pero la luz engendra sombras... y el miedo..." },
+            new IntroSubtitleCue { StartTime = 14.8f, EndTime = 16.5f, TextEnglish = "and fear...", TextSpanish = "y el miedo..." },
             new IntroSubtitleCue { StartTime = 16.8f, EndTime = 20.1f, TextEnglish = "...is the poison of rulers.", TextSpanish = "...es el veneno de los gobernantes." },
             // Clip 3 (20.5s - 30.8s)
             new IntroSubtitleCue { StartTime = 21.1f, EndTime = 27.1f, TextEnglish = "To protect his own domain... he decreed the end of the cycle...", TextSpanish = "Para proteger su propio dominio... decretó el fin del ciclo..." },
@@ -83,18 +83,18 @@ namespace CaveSouls.Features.UI
             new IntroSubtitleCue { StartTime = 50.2f, EndTime = 56.4f, TextEnglish = "Fusing together... solidifying our essence into prisons of crystal... mud... and stone.", TextSpanish = "Fusionándonos... solidificando nuestra esencia en prisiones de cristal... lodo... y piedra." },
             // Clip 7 (56.8s - 66.6s)
             new IntroSubtitleCue { StartTime = 57.3f, EndTime = 59.3f, TextEnglish = "And yet...", TextSpanish = "Y sin embargo..." },
-            new IntroSubtitleCue { StartTime = 59.7f, EndTime = 62.7f, TextEnglish = "And yet... in the lowest stratum...", TextSpanish = "Y sin embargo... en el estrato más profundo..." },
+            new IntroSubtitleCue { StartTime = 59.7f, EndTime = 62.7f, TextEnglish = "in the lowest stratum...", TextSpanish = "en el estrato más profundo..." },
             new IntroSubtitleCue { StartTime = 63.0f, EndTime = 66.2f, TextEnglish = "...where despair reigns...", TextSpanish = "...donde reina la desesperación..." },
             // Clip 8 (66.6s - 74.5s)
             new IntroSubtitleCue { StartTime = 67.1f, EndTime = 71.5f, TextEnglish = "...an ancient spark refuses to fade.", TextSpanish = "...una chispa ancestral se niega a apagarse." },
             new IntroSubtitleCue { StartTime = 72.0f, EndTime = 74.1f, TextEnglish = "A Lumen.", TextSpanish = "Un Lumen." },
             // Clip 9 (74.5s - 83.6s)
             new IntroSubtitleCue { StartTime = 75.3f, EndTime = 77.0f, TextEnglish = "Rise.", TextSpanish = "Álzate." },
-            new IntroSubtitleCue { StartTime = 77.3f, EndTime = 79.9f, TextEnglish = "Rise. Defy the Sentinel.", TextSpanish = "Álzate. Desafía al Centinela." },
+            new IntroSubtitleCue { StartTime = 77.3f, EndTime = 79.9f, TextEnglish = "Defy the Sentinel.", TextSpanish = "Desafía al Centinela." },
             new IntroSubtitleCue { StartTime = 80.3f, EndTime = 83.1f, TextEnglish = "Reclaim the heights.", TextSpanish = "Reclama las alturas." },
             // Clip 10 (83.6s - 93.3s)
             new IntroSubtitleCue { StartTime = 84.4f, EndTime = 86.4f, TextEnglish = "And discover...", TextSpanish = "Y descubre..." },
-            new IntroSubtitleCue { StartTime = 86.7f, EndTime = 89.2f, TextEnglish = "And discover... what was stolen from us...", TextSpanish = "Y descubre... lo que nos fue arrebatado..." },
+            new IntroSubtitleCue { StartTime = 86.7f, EndTime = 89.2f, TextEnglish = "what was stolen from us...", TextSpanish = "...lo que nos fue arrebatado..." },
             new IntroSubtitleCue { StartTime = 89.5f, EndTime = 92.6f, TextEnglish = "...beyond the sky of stone.", TextSpanish = "...más allá del cielo de piedra." }
         };
 
