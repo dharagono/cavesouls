@@ -10,6 +10,21 @@ namespace CaveSouls.Core.Editor
     /// </summary>
     public sealed class SoulsModelImportPostprocessor : AssetPostprocessor
     {
+        private void OnPreprocessTexture()
+        {
+            if (!assetPath.Contains("Assets/_Project/Art/UI/")) return;
+
+            TextureImporter importer = (TextureImporter)assetImporter;
+            if (importer.textureType != TextureImporterType.Sprite)
+            {
+                importer.textureType = TextureImporterType.Sprite;
+                importer.spriteImportMode = SpriteImportMode.Single;
+                importer.alphaIsTransparency = true;
+                importer.mipmapEnabled = false;
+                importer.maxTextureSize = 2048;
+            }
+        }
+
         private void OnPostprocessModel(GameObject root)
         {
             if (!assetPath.Contains("Assets/_Project/Art/Models/")) return;

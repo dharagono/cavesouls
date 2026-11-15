@@ -5,7 +5,9 @@
         "CaveSouls.Core",
         "CaveSouls.Combat",
         "CaveSouls.Player",
-        "CaveSouls.InventoryAndEquipment"
+        "CaveSouls.InventoryAndEquipment",
+        "CaveSouls.SaveSystem",
+        "Unity.InputSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

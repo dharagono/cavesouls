@@ -2,7 +2,9 @@
     "name": "CaveSouls.Core.Editor",
     "rootNamespace": "CaveSouls.Core.Editor",
     "references": [
-        "CaveSouls.Core"
+        "CaveSouls.Core",
+        "CaveSouls.UI",
+        "Unity.RenderPipelines.Universal.Runtime"
     ],
     "includePlatforms": [
         "Editor"
