@@ -10,7 +10,7 @@ namespace CaveSouls.Features.UI
     /// <summary>
     /// Zero-Allocation Souls-like Main Menu Controller.
     /// Manages the "PRESS ANY BUTTON" title state, the main menu button list (CONTINUE, NEW GAME, SETTINGS, EXIT),
-    /// save file detection, and screen fade transitions.
+    /// looping Main Menu OST fade-in/out, save file detection, and screen fade transitions.
     /// </summary>
     public sealed class MainMenuController : MonoBehaviour
     {
@@ -36,6 +36,10 @@ namespace CaveSouls.Features.UI
         [SerializeField] private Button _settingsButton;
         [SerializeField] private Button _exitButton;
         [SerializeField] private Text[] _buttonLabels;
+
+        [Header("Audio (Main Menu Looping OST)")]
+        [SerializeField] private AudioSource _bgmAudioSource;
+        [SerializeField] private float _targetBgmVolume = 0.80f;
 
         [Header("Scene Navigation")]
         [SerializeField] private string _gameplaySceneName = "SampleScene";
@@ -68,6 +72,16 @@ namespace CaveSouls.Features.UI
 
             _selectedIndex = _hasSaveFile ? 0 : 1;
 
+            if (_bgmAudioSource != null)
+            {
+                _bgmAudioSource.loop = true;
+                _bgmAudioSource.volume = 0f;
+                if (!_bgmAudioSource.isPlaying && _bgmAudioSource.clip != null)
+                {
+                    _bgmAudioSource.Play();
+                }
+            }
+
             SetGroup(_screenBlackFadeGroup, 1f, false);
             SetGroup(_titleLogoGroup, 0f, false);
             SetGroup(_pressAnyButtonGroup, 0f, false);
@@ -82,6 +96,14 @@ namespace CaveSouls.Features.UI
             float dt = Time.unscaledDeltaTime;
             _stateTimer += dt;
             if (_navCooldownTimer > 0f) _navCooldownTimer -= dt;
+
+            if (_bgmAudioSource != null && _state != MenuState.TransitioningToGame)
+            {
+                if (_bgmAudioSource.volume < _targetBgmVolume)
+                {
+                    _bgmAudioSource.volume = Mathf.MoveTowards(_bgmAudioSource.volume, _targetBgmVolume, dt * 0.45f);
+                }
+            }
 
             switch (_state)
             {
@@ -130,6 +152,10 @@ namespace CaveSouls.Features.UI
                 case MenuState.TransitioningToGame:
                     float blackAlpha = Mathf.Clamp01(_stateTimer / 1.1f);
                     SetGroup(_screenBlackFadeGroup, blackAlpha, true);
+                    if (_bgmAudioSource != null)
+                    {
+                        _bgmAudioSource.volume = Mathf.Lerp(_targetBgmVolume, 0f, blackAlpha);
+                    }
                     if (_stateTimer >= 1.15f && !_asyncLoadTriggered)
                     {
                         _asyncLoadTriggered = true;
@@ -280,10 +306,12 @@ namespace CaveSouls.Features.UI
     /// </summary>
     public sealed class CavernGodRayPulseController : MonoBehaviour
     {
+        private static readonly int BeamColorPropertyId = Shader.PropertyToID("_BeamColor");
+
         [SerializeField] private Renderer _godRayRenderer;
-        [SerializeField] private Color _baseBeamColor = new Color(0.70f, 0.76f, 0.85f, 0.08f);
+        [SerializeField] private Color _baseBeamColor = new Color(1.30f, 1.45f, 1.68f, 0.24f);
         [SerializeField] private float _pulseSpeed = 0.65f;
-        [SerializeField] private float _driftAmplitude = 0.25f;
+        [SerializeField] private float _driftAmplitude = 0.22f;
 
         private MaterialPropertyBlock _propBlock;
         private Vector3 _initialLocalPos;
@@ -298,7 +326,7 @@ namespace CaveSouls.Features.UI
         private void Update()
         {
             float t = Time.time * _pulseSpeed;
-            float alphaFactor = 0.75f + 0.25f * Mathf.Sin(t);
+            float alphaFactor = 0.80f + 0.20f * Mathf.Sin(t);
 
             transform.localPosition = _initialLocalPos + new Vector3(Mathf.Sin(t * 0.5f) * _driftAmplitude, 0f, 0f);
 
@@ -307,6 +335,7 @@ namespace CaveSouls.Features.UI
                 _godRayRenderer.GetPropertyBlock(_propBlock);
                 Color c = _baseBeamColor;
                 c.a *= alphaFactor;
+                _propBlock.SetColor(BeamColorPropertyId, c);
                 _propBlock.SetColor(ShaderIDs.BaseColor, c);
                 _godRayRenderer.SetPropertyBlock(_propBlock);
             }

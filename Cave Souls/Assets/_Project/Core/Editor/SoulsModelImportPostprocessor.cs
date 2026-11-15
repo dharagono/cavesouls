@@ -4,24 +4,54 @@ using UnityEngine;
 namespace CaveSouls.Core.Editor
 {
     /// <summary>
-    /// Automatically configures imported Souls-like FBX assets under Assets/_Project/Art/Models/:
+    /// Automatically configures imported Souls-like FBX assets and PBR textures under Assets/_Project/Art/:
     /// - Converts child objects prefixed with "UCX_" into convex MeshColliders and removes their MeshRenderer.
     /// - Configures LODGroup when _LOD0, _LOD1, and _LOD2 are present.
+    /// - Sets Normal Maps (*_Normal*) to TextureImporterType.NormalMap and Mask Maps (*_MaskMap*) to linear (sRGB = false).
     /// </summary>
     public sealed class SoulsModelImportPostprocessor : AssetPostprocessor
     {
         private void OnPreprocessTexture()
         {
-            if (!assetPath.Contains("Assets/_Project/Art/UI/")) return;
-
             TextureImporter importer = (TextureImporter)assetImporter;
-            if (importer.textureType != TextureImporterType.Sprite)
+
+            if (assetPath.Contains("Assets/_Project/Art/UI/"))
             {
-                importer.textureType = TextureImporterType.Sprite;
-                importer.spriteImportMode = SpriteImportMode.Single;
-                importer.alphaIsTransparency = true;
-                importer.mipmapEnabled = false;
+                if (importer.textureType != TextureImporterType.Sprite)
+                {
+                    importer.textureType = TextureImporterType.Sprite;
+                    importer.spriteImportMode = SpriteImportMode.Single;
+                    importer.alphaIsTransparency = true;
+                    importer.mipmapEnabled = false;
+                    importer.maxTextureSize = 2048;
+                }
+                return;
+            }
+
+            if (assetPath.Contains("Assets/_Project/Art/Textures/"))
+            {
                 importer.maxTextureSize = 2048;
+                importer.mipmapEnabled = true;
+                importer.wrapMode = TextureWrapMode.Repeat;
+                importer.filterMode = FilterMode.Trilinear;
+                importer.anisoLevel = 8;
+
+                if (assetPath.Contains("_Normal"))
+                {
+                    importer.textureType = TextureImporterType.NormalMap;
+                    importer.sRGBTexture = false;
+                }
+                else if (assetPath.Contains("_MaskMap"))
+                {
+                    importer.textureType = TextureImporterType.Default;
+                    importer.sRGBTexture = false;
+                    importer.alphaSource = TextureImporterAlphaSource.FromInput;
+                }
+                else
+                {
+                    importer.textureType = TextureImporterType.Default;
+                    importer.sRGBTexture = true;
+                }
             }
         }
 

@@ -15,6 +15,9 @@ namespace CaveSouls.Core.Editor
         private const string ScenesDir = "Assets/_Project/Scenes";
         private const string VfxDir = "Assets/_Project/Art/VFX";
         private const string MaterialsDir = "Assets/_Project/Art/Materials";
+        private const string TexturesDir = "Assets/_Project/Art/Textures";
+        private const string SettingsDir = "Assets/_Project/Art/Settings";
+        private const string AudioDir = "Assets/_Project/Art/Audio";
         private const string SplashScenePath = ScenesDir + "/00_SplashScreen.unity";
         private const string MainMenuScenePath = ScenesDir + "/01_MainMenu.unity";
 
@@ -22,20 +25,26 @@ namespace CaveSouls.Core.Editor
         public static void BuildAll()
         {
             EnsureDirectories();
+            EnsurePbrTextureImportSettings();
+            ConfigureUrpDepthAndOpaqueTextures();
+
             GenerateProceduralVfxTexturesAndMaterials(
                 out Material rockMat,
                 out Material godRayMat,
                 out Material mistParticleMat,
                 out Material emberParticleMat,
-                out Sprite unityCubeEmblemSprite);
+                out Sprite unityCubeEmblemSprite,
+                out Sprite uiDarkBannerSprite);
+
+            VolumeProfile eldenRingProfile = CreateOrUpdateEldenRingVolumeProfile();
 
             BuildSplashScreenScene(unityCubeEmblemSprite);
-            BuildMainMenuScene(rockMat, godRayMat, mistParticleMat, emberParticleMat);
+            BuildMainMenuScene(rockMat, godRayMat, mistParticleMat, emberParticleMat, eldenRingProfile, uiDarkBannerSprite);
             RegisterScenesInBuildSettings();
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log("[CaveSouls] Successfully built 00_SplashScreen.unity and 01_MainMenu.unity!");
+            Debug.Log("[CaveSouls] Successfully built 00_SplashScreen.unity and Elden Ring / Dark Souls LookDev 01_MainMenu.unity (with looping OST)!");
         }
 
         private static void EnsureDirectories()
@@ -43,6 +52,110 @@ namespace CaveSouls.Core.Editor
             if (!Directory.Exists(ScenesDir)) Directory.CreateDirectory(ScenesDir);
             if (!Directory.Exists(VfxDir)) Directory.CreateDirectory(VfxDir);
             if (!Directory.Exists(MaterialsDir)) Directory.CreateDirectory(MaterialsDir);
+            if (!Directory.Exists(TexturesDir)) Directory.CreateDirectory(TexturesDir);
+            if (!Directory.Exists(SettingsDir)) Directory.CreateDirectory(SettingsDir);
+            if (!Directory.Exists(AudioDir)) Directory.CreateDirectory(AudioDir);
+        }
+
+        private static void EnsurePbrTextureImportSettings()
+        {
+            string[] normalPaths =
+            {
+                TexturesDir + "/TEX_CavernCliff_NormalGL.png",
+                TexturesDir + "/TEX_CavernMoss_NormalGL.png"
+            };
+            foreach (string path in normalPaths)
+            {
+                if (AssetImporter.GetAtPath(path) is TextureImporter ti && ti.textureType != TextureImporterType.NormalMap)
+                {
+                    ti.textureType = TextureImporterType.NormalMap;
+                    ti.sRGBTexture = false;
+                    ti.wrapMode = TextureWrapMode.Repeat;
+                    ti.anisoLevel = 8;
+                    ti.SaveAndReimport();
+                }
+            }
+
+            string[] maskPaths =
+            {
+                TexturesDir + "/TEX_CavernCliff_MaskMap.png",
+                TexturesDir + "/TEX_CavernMoss_MaskMap.png"
+            };
+            foreach (string path in maskPaths)
+            {
+                if (AssetImporter.GetAtPath(path) is TextureImporter ti && ti.sRGBTexture)
+                {
+                    ti.sRGBTexture = false;
+                    ti.alphaSource = TextureImporterAlphaSource.FromInput;
+                    ti.wrapMode = TextureWrapMode.Repeat;
+                    ti.anisoLevel = 8;
+                    ti.SaveAndReimport();
+                }
+            }
+        }
+
+        private static void ConfigureUrpDepthAndOpaqueTextures()
+        {
+            if (GraphicsSettings.currentRenderPipeline is UniversalRenderPipelineAsset urpAsset)
+            {
+                urpAsset.supportsCameraDepthTexture = true;
+                urpAsset.supportsCameraOpaqueTexture = true;
+                EditorUtility.SetDirty(urpAsset);
+            }
+        }
+
+        private static VolumeProfile CreateOrUpdateEldenRingVolumeProfile()
+        {
+            string profilePath = SettingsDir + "/Profile_MainMenu_EldenRing.asset";
+            VolumeProfile profile = AssetDatabase.LoadAssetAtPath<VolumeProfile>(profilePath);
+            if (profile == null)
+            {
+                profile = ScriptableObject.CreateInstance<VolumeProfile>();
+                AssetDatabase.CreateAsset(profile, profilePath);
+            }
+
+            // 1. ACES Tonemapping (high dynamic range filmic roll-off)
+            if (!profile.TryGet(out Tonemapping tonemapping))
+            {
+                tonemapping = profile.Add<Tonemapping>(true);
+            }
+            tonemapping.active = true;
+            tonemapping.mode.Override(TonemappingMode.ACES);
+
+            // 2. Color Adjustments (LookDev Directive: Contrast +15, Saturation -12)
+            if (!profile.TryGet(out ColorAdjustments colorAdj))
+            {
+                colorAdj = profile.Add<ColorAdjustments>(true);
+            }
+            colorAdj.active = true;
+            colorAdj.postExposure.Override(0.28f);
+            colorAdj.contrast.Override(15f);
+            colorAdj.saturation.Override(-12f);
+            colorAdj.colorFilter.Override(new Color(0.95f, 0.97f, 1.0f, 1.0f));
+
+            // 3. Bloom (LookDev Directive: Threshold 1.1, Intensity 0.35, warm tint)
+            if (!profile.TryGet(out Bloom bloom))
+            {
+                bloom = profile.Add<Bloom>(true);
+            }
+            bloom.active = true;
+            bloom.threshold.Override(1.1f);
+            bloom.intensity.Override(0.35f);
+            bloom.scatter.Override(0.68f);
+            bloom.tint.Override(new Color(1.0f, 0.86f, 0.68f, 1.0f));
+
+            // 4. Subtle Dark Fantasy Vignette
+            if (!profile.TryGet(out Vignette vignette))
+            {
+                vignette = profile.Add<Vignette>(true);
+            }
+            vignette.active = true;
+            vignette.color.Override(new Color(0.01f, 0.012f, 0.018f, 1.0f));
+            vignette.intensity.Override(0.28f);
+            vignette.smoothness.Override(0.45f);
+
+            EditorUtility.SetDirty(profile);
+            return profile;
         }
 
         private static void GenerateProceduralVfxTexturesAndMaterials(
@@ -50,7 +163,8 @@ namespace CaveSouls.Core.Editor
             out Material godRayMat,
             out Material mistParticleMat,
             out Material emberParticleMat,
-            out Sprite unityCubeEmblemSprite)
+            out Sprite unityCubeEmblemSprite,
+            out Sprite uiDarkBannerSprite)
         {
             // 1. Soft Radial Mist & Ember Texture (128x128 Gaussian falloff so particles are soft clouds/sparks)
             string mistTexPath = VfxDir + "/TEX_SoftRadialCloud.png";
@@ -74,28 +188,24 @@ namespace CaveSouls.Core.Editor
                 Object.DestroyImmediate(tex);
             }
 
-            // 2. Soft God-Ray Beam Falloff Texture (128x256 soft horizontal & vertical bell curve)
-            string beamTexPath = VfxDir + "/TEX_GodRaySoftBeam.png";
-            if (!File.Exists(beamTexPath))
+            // 2. FromSoftware Horizontal Dark Gradient Banner Sprite (for "PRESS ANY BUTTON" & Menu Selection)
+            string bannerPath = "Assets/_Project/Art/UI/UI_SoulsMenuBanner.png";
+            if (!File.Exists(bannerPath))
             {
-                Texture2D bTex = new Texture2D(128, 256, TextureFormat.RGBA32, false);
-                for (int y = 0; y < 256; y++)
+                Texture2D banTex = new Texture2D(256, 32, TextureFormat.RGBA32, false);
+                for (int y = 0; y < 32; y++)
                 {
-                    float vy = y / 255f;
-                    float vFade = Mathf.Sin(vy * Mathf.PI);
-                    vFade = vFade * vFade;
-                    for (int x = 0; x < 128; x++)
+                    float vy = Mathf.Sin((y / 31f) * Mathf.PI);
+                    for (int x = 0; x < 256; x++)
                     {
-                        float ux = x / 127f;
-                        float hFade = Mathf.Sin(ux * Mathf.PI);
-                        hFade = hFade * hFade;
-                        float a = vFade * hFade;
-                        bTex.SetPixel(x, y, new Color(1f, 1f, 1f, a));
+                        float ux = Mathf.Sin((x / 255f) * Mathf.PI);
+                        float a = (ux * ux) * (vy * 0.85f + 0.15f);
+                        banTex.SetPixel(x, y, new Color(1f, 1f, 1f, a));
                     }
                 }
-                bTex.Apply();
-                File.WriteAllBytes(beamTexPath, bTex.EncodeToPNG());
-                Object.DestroyImmediate(bTex);
+                banTex.Apply();
+                File.WriteAllBytes(bannerPath, banTex.EncodeToPNG());
+                Object.DestroyImmediate(banTex);
             }
 
             // 3. Minimalist Isometric Unity-Style Cube Emblem Sprite for "MADE WITH UNITY" Splash
@@ -109,7 +219,6 @@ namespace CaveSouls.Core.Editor
                     {
                         float nx = (x - 128f) / 96f;
                         float ny = (y - 128f) / 96f;
-                        // Isometric hexagon outline + inner Y-axes representing the 3D engine cube
                         float hex = Mathf.Max(Mathf.Abs(nx) * 0.866f + Mathf.Abs(ny) * 0.5f, Mathf.Abs(ny));
                         bool onOuterRing = hex >= 0.72f && hex <= 0.88f;
                         float d1 = Mathf.Abs(nx) < 0.08f && ny < 0f && hex < 0.78f ? 1f : 0f;
@@ -129,34 +238,75 @@ namespace CaveSouls.Core.Editor
             AssetDatabase.Refresh();
 
             Texture2D mistTexAsset = AssetDatabase.LoadAssetAtPath<Texture2D>(mistTexPath);
-            Texture2D beamTexAsset = AssetDatabase.LoadAssetAtPath<Texture2D>(beamTexPath);
             unityCubeEmblemSprite = AssetDatabase.LoadAssetAtPath<Sprite>(emblemPath);
+            uiDarkBannerSprite = AssetDatabase.LoadAssetAtPath<Sprite>(bannerPath);
 
-            // Create URP Dark Cavern Rock Material
+            // Load 2K CC0 PBR Textures + Packed MaskMaps
+            Texture2D cliffBase = AssetDatabase.LoadAssetAtPath<Texture2D>(TexturesDir + "/TEX_CavernCliff_BaseColor.png");
+            Texture2D cliffNorm = AssetDatabase.LoadAssetAtPath<Texture2D>(TexturesDir + "/TEX_CavernCliff_NormalGL.png");
+            Texture2D cliffMask = AssetDatabase.LoadAssetAtPath<Texture2D>(TexturesDir + "/TEX_CavernCliff_MaskMap.png");
+
+            Texture2D mossBase = AssetDatabase.LoadAssetAtPath<Texture2D>(TexturesDir + "/TEX_CavernMoss_BaseColor.png");
+            Texture2D mossNorm = AssetDatabase.LoadAssetAtPath<Texture2D>(TexturesDir + "/TEX_CavernMoss_NormalGL.png");
+            Texture2D mossMask = AssetDatabase.LoadAssetAtPath<Texture2D>(TexturesDir + "/TEX_CavernMoss_MaskMap.png");
+
+            // Create / Update FromSoftware Vertex-Blend + Rim Light Cavern Rock Material
             string rockMatPath = MaterialsDir + "/MAT_URP_AbyssalCavernRock.mat";
             rockMat = AssetDatabase.LoadAssetAtPath<Material>(rockMatPath);
+            Shader soulsRockShader = Shader.Find("CaveSouls/URP/SoulsVertexBlendLit")
+                                     ?? Shader.Find("Universal Render Pipeline/Lit")
+                                     ?? Shader.Find("Standard");
             if (rockMat == null)
             {
-                Shader litShader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-                rockMat = new Material(litShader);
+                rockMat = new Material(soulsRockShader);
                 AssetDatabase.CreateAsset(rockMat, rockMatPath);
             }
-            rockMat.SetColor("_BaseColor", new Color(0.11f, 0.12f, 0.14f, 1.0f));
-            rockMat.SetFloat("_Smoothness", 0.22f);
-            rockMat.SetFloat("_Metallic", 0.05f);
+            rockMat.shader = soulsRockShader;
+            rockMat.SetTexture("_BaseMap", cliffBase);
+            rockMat.SetColor("_BaseColor", new Color(0.15f, 0.17f, 0.20f, 1.0f));
+            rockMat.SetTexture("_BumpMap", cliffNorm);
+            rockMat.SetFloat("_BumpScale", 1.38f);
+            rockMat.SetTexture("_MaskMap", cliffMask);
+
+            rockMat.SetTexture("_MossBaseMap", mossBase);
+            rockMat.SetColor("_MossColor", new Color(0.09f, 0.12f, 0.11f, 1.0f));
+            rockMat.SetTexture("_MossBumpMap", mossNorm);
+            rockMat.SetFloat("_MossBumpScale", 1.25f);
+            rockMat.SetTexture("_MossMaskMap", mossMask);
+            rockMat.SetFloat("_MossBlendStrength", 1.15f);
+            rockMat.SetFloat("_MossSharpness", 2.6f);
+
+            rockMat.SetColor("_EdgeWearColor", new Color(0.36f, 0.42f, 0.50f, 1.0f));
+            rockMat.SetFloat("_EdgeWearStrength", 0.45f);
+            rockMat.SetColor("_RimColor", new Color(0.45f, 0.56f, 0.72f, 1.0f));
+            rockMat.SetFloat("_RimPower", 3.6f);
+            rockMat.SetFloat("_RimIntensity", 0.48f);
+            rockMat.SetFloat("_SmoothnessMultiplier", 0.76f);
+            rockMat.SetFloat("_OcclusionStrength", 0.94f);
             EditorUtility.SetDirty(rockMat);
 
-            // Create URP Additive God-Rays Material
+            // Create / Update Volumetric Depth-Faded God-Rays Material
             string godRayMatPath = MaterialsDir + "/MAT_URP_CavernGodRays.mat";
             godRayMat = AssetDatabase.LoadAssetAtPath<Material>(godRayMatPath);
-            Shader particleUnlit = Shader.Find("Universal Render Pipeline/Particles/Unlit") ?? Shader.Find("Particles/Standard Unlit");
+            Shader volumetricRayShader = Shader.Find("CaveSouls/URP/SoulsVolumetricGodRay")
+                                         ?? Shader.Find("Universal Render Pipeline/Particles/Unlit");
             if (godRayMat == null)
             {
-                godRayMat = new Material(particleUnlit);
+                godRayMat = new Material(volumetricRayShader);
                 AssetDatabase.CreateAsset(godRayMat, godRayMatPath);
             }
-            godRayMat.shader = particleUnlit;
-            ConfigureAdditiveParticleMaterial(godRayMat, beamTexAsset, new Color(0.68f, 0.74f, 0.84f, 0.055f));
+            godRayMat.shader = volumetricRayShader;
+            godRayMat.SetColor("_BeamColor", new Color(1.25f, 1.38f, 1.58f, 0.32f));
+            godRayMat.SetColor("_CoreColor", new Color(1.55f, 1.62f, 1.75f, 1.0f));
+            godRayMat.SetFloat("_DepthFadeDistance", 2.2f);
+            godRayMat.SetFloat("_FresnelFadePower", 1.45f);
+            godRayMat.SetFloat("_NoiseScale", 3.2f);
+            godRayMat.SetFloat("_ScrollSpeed", 0.045f);
+            godRayMat.SetFloat("_BeamContrast", 1.55f);
+            godRayMat.renderQueue = (int)RenderQueue.Transparent;
+            EditorUtility.SetDirty(godRayMat);
+
+            Shader particleUnlit = Shader.Find("Universal Render Pipeline/Particles/Unlit") ?? Shader.Find("Particles/Standard Unlit");
 
             // Create URP Soft Mist Particle Material
             string mistMatPath = MaterialsDir + "/MAT_URP_CavernMistParticle.mat";
@@ -167,9 +317,9 @@ namespace CaveSouls.Core.Editor
                 AssetDatabase.CreateAsset(mistParticleMat, mistMatPath);
             }
             mistParticleMat.shader = particleUnlit;
-            ConfigureAlphaBlendedParticleMaterial(mistParticleMat, mistTexAsset, new Color(0.55f, 0.60f, 0.68f, 0.065f));
+            ConfigureAlphaBlendedParticleMaterial(mistParticleMat, mistTexAsset, new Color(0.65f, 0.72f, 0.82f, 0.14f));
 
-            // Create URP Glowing Ember Particle Material
+            // Create URP HDR Glowing Ember Particle Material (HDR values > 1.1 trigger ACES Bloom!)
             string emberMatPath = MaterialsDir + "/MAT_URP_FloatingEmberParticle.mat";
             emberParticleMat = AssetDatabase.LoadAssetAtPath<Material>(emberMatPath);
             if (emberParticleMat == null)
@@ -178,7 +328,7 @@ namespace CaveSouls.Core.Editor
                 AssetDatabase.CreateAsset(emberParticleMat, emberMatPath);
             }
             emberParticleMat.shader = particleUnlit;
-            ConfigureAdditiveParticleMaterial(emberParticleMat, mistTexAsset, new Color(1.0f, 0.48f, 0.14f, 0.95f));
+            ConfigureAdditiveParticleMaterial(emberParticleMat, mistTexAsset, new Color(2.85f, 1.18f, 0.28f, 0.95f));
         }
 
         private static void ConfigureAdditiveParticleMaterial(Material mat, Texture2D tex, Color baseCol)
@@ -303,54 +453,91 @@ namespace CaveSouls.Core.Editor
             Material rockMat,
             Material godRayMat,
             Material mistParticleMat,
-            Material emberParticleMat)
+            Material emberParticleMat,
+            VolumeProfile eldenRingProfile,
+            Sprite uiDarkBannerSprite)
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
-            // Configure pitch-black upper sky & atmospheric lower cavern fog matching reference image
+            // Configure pitch-black upper sky & atmospheric lower cavern fog per LookDev Directive
             RenderSettings.skybox = null;
-            RenderSettings.ambientMode = AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.05f, 0.055f, 0.065f, 1.0f);
+            RenderSettings.ambientMode = AmbientMode.Trilight;
+            RenderSettings.ambientSkyColor = new Color(0.018f, 0.022f, 0.030f, 1.0f);
+            RenderSettings.ambientEquatorColor = new Color(0.012f, 0.015f, 0.020f, 1.0f);
+            RenderSettings.ambientGroundColor = new Color(0.005f, 0.006f, 0.009f, 1.0f);
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
-            RenderSettings.fogColor = new Color(0.02f, 0.022f, 0.028f, 1.0f);
-            RenderSettings.fogDensity = 0.035f;
+            RenderSettings.fogColor = new Color(0.008f, 0.010f, 0.014f, 1.0f);
+            RenderSettings.fogDensity = 0.038f;
 
-            // 1. Main Camera framed so the 3D Cavern Diorama occupies the lower third and the upper 60% is pure black
+            // 1. Main Camera framed so the multi-plane 3D Cavern Diorama occupies the lower 38% and the upper 62% is pure pitch-black
             GameObject camObj = new GameObject("Main Camera");
             camObj.tag = "MainCamera";
-            camObj.transform.position = new Vector3(0f, 2.35f, -9.2f);
-            camObj.transform.rotation = Quaternion.Euler(4.5f, 0f, 0f);
+            camObj.transform.position = new Vector3(0f, 2.35f, -9.4f);
+            camObj.transform.rotation = Quaternion.Euler(4.2f, 0f, 0f);
             Camera cam = camObj.AddComponent<Camera>();
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = Color.black;
             cam.fieldOfView = 42f;
             cam.nearClipPlane = 0.1f;
-            cam.farClipPlane = 60f;
+            cam.farClipPlane = 65f;
+            cam.depthTextureMode = DepthTextureMode.Depth | DepthTextureMode.DepthNormals;
             camObj.AddComponent<AudioListener>();
             var camData = camObj.AddComponent<UniversalAdditionalCameraData>();
             camData.renderPostProcessing = true;
+            camData.requiresDepthOption = CameraOverrideOption.On;
+            camData.requiresColorOption = CameraOverrideOption.On;
 
-            // 2. Subtle Cold Rim Light on the Cavern Rocks (matching the silver/grey light shafts in reference)
-            GameObject rimLightObj = new GameObject("Light_CavernTopRim");
-            rimLightObj.transform.position = new Vector3(-1.5f, 6.0f, -2.0f);
-            rimLightObj.transform.rotation = Quaternion.Euler(68f, 22f, 0f);
+            // 2. Global Volume (ACES Tonemapping, Contrast +15, Saturation -12, Bloom 1.1 / 0.35, Vignette)
+            GameObject volumeObj = new GameObject("Global Volume (Elden Ring LookDev)");
+            Volume globalVol = volumeObj.AddComponent<Volume>();
+            globalVol.isGlobal = true;
+            globalVol.priority = 10f;
+            globalVol.sharedProfile = eldenRingProfile;
+
+            // 3. Dramatic Grazing Cold Rim Light (LookDev Directive: 15-25 deg grazing angle + Soft Shadows)
+            GameObject rimLightObj = new GameObject("Light_CavernGrazingRim");
+            rimLightObj.transform.position = new Vector3(5.0f, 6.0f, -3.0f);
+            rimLightObj.transform.rotation = Quaternion.Euler(20f, -42f, 0f);
             Light rimLight = rimLightObj.AddComponent<Light>();
             rimLight.type = LightType.Directional;
-            rimLight.color = new Color(0.68f, 0.74f, 0.85f, 1.0f);
-            rimLight.intensity = 0.78f;
-            rimLight.shadows = LightShadows.None;
+            rimLight.color = new Color(0.62f, 0.72f, 0.88f, 1.0f);
+            rimLight.intensity = 1.15f;
+            rimLight.shadows = LightShadows.Soft;
+            rimLight.shadowStrength = 0.92f;
             rimLightObj.AddComponent<UniversalAdditionalLightData>();
 
-            // 3. Instantiate 3D Cavern Diorama from Blender FBX in the lower third
+            // Secondary Chasm Aperture Point Light (illuminates the right-hand fractured crags)
+            GameObject chasmLightObj = new GameObject("Light_UpperRightChasmFill");
+            chasmLightObj.transform.position = new Vector3(3.2f, 0.6f, -3.2f);
+            Light chasmLight = chasmLightObj.AddComponent<Light>();
+            chasmLight.type = LightType.Point;
+            chasmLight.range = 14.0f;
+            chasmLight.color = new Color(0.55f, 0.68f, 0.88f, 1.0f);
+            chasmLight.intensity = 1.85f;
+            chasmLight.shadows = LightShadows.Soft;
+            chasmLightObj.AddComponent<UniversalAdditionalLightData>();
+
+            // Subtle Warm Bonfire / Ember Sub-Fill on Foreground Rocks
+            GameObject emberLightObj = new GameObject("Light_EmberWarmSubFill");
+            emberLightObj.transform.position = new Vector3(-0.8f, -0.8f, -5.2f);
+            Light emberLight = emberLightObj.AddComponent<Light>();
+            emberLight.type = LightType.Point;
+            emberLight.range = 8.5f;
+            emberLight.color = new Color(1.0f, 0.48f, 0.16f, 1.0f);
+            emberLight.intensity = 0.75f;
+            emberLight.shadows = LightShadows.None;
+            emberLightObj.AddComponent<UniversalAdditionalLightData>();
+
+            // 4. Instantiate High-Detail Multi-Plane 3D Cavern Diorama from Blender FBX in the lower third
             GameObject dioramaPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Art/Models/ENV_MainMenuCavernDiorama.fbx");
             if (dioramaPrefab != null)
             {
                 GameObject dioramaInst = (GameObject)PrefabUtility.InstantiatePrefab(dioramaPrefab);
                 dioramaInst.name = "ENV_MainMenuCavernDiorama";
-                dioramaInst.transform.position = new Vector3(0f, -1.65f, 0f);
+                dioramaInst.transform.position = new Vector3(0f, -2.05f, 0.8f);
                 dioramaInst.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
-                dioramaInst.transform.localScale = new Vector3(1.15f, 0.95f, 1.15f);
+                dioramaInst.transform.localScale = new Vector3(1.12f, 0.36f, 1.05f);
 
                 if (dioramaInst.TryGetComponent(out LODGroup dioLodGroup))
                 {
@@ -361,26 +548,24 @@ namespace CaveSouls.Core.Editor
                 for (int i = 0; i < renderers.Length; i++)
                 {
                     renderers[i].sharedMaterial = rockMat;
+                    renderers[i].shadowCastingMode = ShadowCastingMode.On;
+                    renderers[i].receiveShadows = true;
                     if (!renderers[i].gameObject.name.EndsWith("_LOD0"))
                     {
                         renderers[i].gameObject.SetActive(false);
                     }
-                    else if (renderers[i].TryGetComponent(out MeshFilter mf) && mf.sharedMesh != null)
-                    {
-                        mf.sharedMesh.RecalculateNormals();
-                    }
                 }
             }
 
-            // 4. Instantiate 3D Volumetric God-Rays Mesh from Blender FBX
+            // 5. Instantiate Multi-Layered Volumetric God-Rays Mesh from Blender FBX
             GameObject godRaysPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Art/Models/VFX_CavernGodRaysMesh.fbx");
             if (godRaysPrefab != null)
             {
                 GameObject raysInst = (GameObject)PrefabUtility.InstantiatePrefab(godRaysPrefab);
                 raysInst.name = "VFX_CavernGodRaysMesh";
-                raysInst.transform.position = new Vector3(-0.35f, -1.75f, -1.5f);
-                raysInst.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
-                raysInst.transform.localScale = new Vector3(1.15f, 0.90f, 1.0f);
+                raysInst.transform.position = new Vector3(-2.4f, -2.35f, -2.5f);
+                raysInst.transform.rotation = Quaternion.Euler(0f, 0f, -8f);
+                raysInst.transform.localScale = new Vector3(0.95f, 0.42f, 1.0f);
 
                 if (raysInst.TryGetComponent(out LODGroup raysLodGroup))
                 {
@@ -418,9 +603,9 @@ namespace CaveSouls.Core.Editor
                 }
             }
 
-            // 5. Real-Time Particle System 1: Drifting Low Cavern Mist (Lower third only!)
+            // 6. Real-Time Particle System 1: Drifting Low Cavern Mist
             GameObject fogPsObj = new GameObject("PS_CavernRollingFog");
-            fogPsObj.transform.position = new Vector3(-0.5f, -0.45f, -2.2f);
+            fogPsObj.transform.position = new Vector3(-0.4f, -0.55f, -2.4f);
             ParticleSystem fogPs = fogPsObj.AddComponent<ParticleSystem>();
             var fogRenderer = fogPsObj.GetComponent<ParticleSystemRenderer>();
             fogRenderer.sharedMaterial = mistParticleMat;
@@ -429,19 +614,19 @@ namespace CaveSouls.Core.Editor
             var fogMain = fogPs.main;
             fogMain.loop = true;
             fogMain.prewarm = true;
-            fogMain.startLifetime = new ParticleSystem.MinMaxCurve(7f, 12f);
-            fogMain.startSpeed = new ParticleSystem.MinMaxCurve(0.08f, 0.22f);
-            fogMain.startSize = new ParticleSystem.MinMaxCurve(4.2f, 7.5f);
+            fogMain.startLifetime = new ParticleSystem.MinMaxCurve(7.5f, 13f);
+            fogMain.startSpeed = new ParticleSystem.MinMaxCurve(0.06f, 0.20f);
+            fogMain.startSize = new ParticleSystem.MinMaxCurve(4.5f, 8.2f);
             fogMain.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
-            fogMain.startColor = new Color(0.68f, 0.73f, 0.80f, 0.14f);
-            fogMain.maxParticles = 64;
+            fogMain.startColor = new Color(0.68f, 0.75f, 0.85f, 0.12f);
+            fogMain.maxParticles = 72;
 
             var fogEmission = fogPs.emission;
-            fogEmission.rateOverTime = 8.0f;
+            fogEmission.rateOverTime = 9.0f;
 
             var fogShape = fogPs.shape;
             fogShape.shapeType = ParticleSystemShapeType.Box;
-            fogShape.scale = new Vector3(11.0f, 1.4f, 4.0f);
+            fogShape.scale = new Vector3(12.0f, 1.5f, 5.0f);
 
             var fogColOverLife = fogPs.colorOverLifetime;
             fogColOverLife.enabled = true;
@@ -452,9 +637,9 @@ namespace CaveSouls.Core.Editor
             );
             fogColOverLife.color = new ParticleSystem.MinMaxGradient(fogGrad);
 
-            // 6. Real-Time Particle System 2: Floating Glowing Orange Embers in the Mist
+            // 7. Real-Time Particle System 2: HDR Floating Glowing Orange Embers (triggers ACES Bloom)
             GameObject emberPsObj = new GameObject("PS_FloatingEmbers");
-            emberPsObj.transform.position = new Vector3(0f, -0.85f, -3.2f);
+            emberPsObj.transform.position = new Vector3(0f, -0.85f, -3.4f);
             ParticleSystem emberPs = emberPsObj.AddComponent<ParticleSystem>();
             var emberRenderer = emberPsObj.GetComponent<ParticleSystemRenderer>();
             emberRenderer.sharedMaterial = emberParticleMat;
@@ -463,29 +648,29 @@ namespace CaveSouls.Core.Editor
             emberMain.loop = true;
             emberMain.prewarm = true;
             emberMain.startLifetime = new ParticleSystem.MinMaxCurve(4.5f, 8.0f);
-            emberMain.startSpeed = new ParticleSystem.MinMaxCurve(0.12f, 0.32f);
-            emberMain.startSize = new ParticleSystem.MinMaxCurve(0.025f, 0.065f);
+            emberMain.startSpeed = new ParticleSystem.MinMaxCurve(0.12f, 0.34f);
+            emberMain.startSize = new ParticleSystem.MinMaxCurve(0.025f, 0.068f);
             emberMain.startColor = new ParticleSystem.MinMaxGradient(
-                new Color(1.0f, 0.45f, 0.12f, 0.9f),
-                new Color(1.0f, 0.72f, 0.25f, 1.0f));
-            emberMain.maxParticles = 40;
+                new Color(1.0f, 0.48f, 0.14f, 0.92f),
+                new Color(1.0f, 0.76f, 0.28f, 1.0f));
+            emberMain.maxParticles = 48;
 
             var emberEmission = emberPs.emission;
-            emberEmission.rateOverTime = 4.5f;
+            emberEmission.rateOverTime = 5.5f;
 
             var emberShape = emberPs.shape;
             emberShape.shapeType = ParticleSystemShapeType.Box;
-            emberShape.scale = new Vector3(9.5f, 1.2f, 3.0f);
+            emberShape.scale = new Vector3(10.5f, 1.4f, 3.8f);
 
             var emberVel = emberPs.velocityOverLifetime;
             emberVel.enabled = true;
-            emberVel.x = new ParticleSystem.MinMaxCurve(-0.08f, 0.12f);
-            emberVel.y = new ParticleSystem.MinMaxCurve(0.08f, 0.24f);
+            emberVel.x = new ParticleSystem.MinMaxCurve(-0.08f, 0.14f);
+            emberVel.y = new ParticleSystem.MinMaxCurve(0.08f, 0.26f);
             emberVel.z = new ParticleSystem.MinMaxCurve(-0.05f, 0.05f);
 
             var emberNoise = emberPs.noise;
             emberNoise.enabled = true;
-            emberNoise.strength = 0.18f;
+            emberNoise.strength = 0.20f;
             emberNoise.frequency = 0.45f;
 
             var emberColLife = emberPs.colorOverLifetime;
@@ -495,15 +680,26 @@ namespace CaveSouls.Core.Editor
             fogPs.Simulate(6.0f, true, true);
             emberPs.Simulate(6.0f, true, true);
 
-            // 7. UI Canvas & CAVE SOULS Title + Interactive Menu
+            // 8. Looping Main Menu OST ("Beneath_the_Sealed_Sky.ogg")
+            AudioClip bgmClip = AssetDatabase.LoadAssetAtPath<AudioClip>(AudioDir + "/BGM_BeneathTheSealedSky.ogg");
+            GameObject bgmObj = new GameObject("BGM_MainMenuOST");
+            AudioSource bgmSource = bgmObj.AddComponent<AudioSource>();
+            bgmSource.clip = bgmClip;
+            bgmSource.loop = true;
+            bgmSource.playOnAwake = true;
+            bgmSource.spatialBlend = 0f; // 2D UI/Menu Music
+            bgmSource.volume = 0.80f;
+            bgmSource.priority = 0;
+
+            // 9. UI Canvas & CAVE SOULS Title + FromSoftware Ornamental Menu
             CreateEventSystem();
             GameObject canvasObj = CreateStandardCanvas("MainMenuCanvas", cam);
 
-            // Title Logo ("CAVE SOULS") positioned exactly as in REF_MainMenu_TargetLook.jpg
+            // Title Logo ("CAVE SOULS") positioned to match REF_MainMenu_TargetLook.jpg
             Sprite titleSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/_Project/Art/UI/UI_Logo_CaveSouls_Title.png");
             GameObject titleObj = CreateUIObject("TitleLogoGroup", canvasObj.transform);
             RectTransform titleRect = titleObj.GetComponent<RectTransform>();
-            titleRect.anchoredPosition = new Vector2(0f, 55f);
+            titleRect.anchoredPosition = new Vector2(0f, 58f);
             titleRect.sizeDelta = new Vector2(1420f, 790f);
             CanvasGroup titleCg = titleObj.AddComponent<CanvasGroup>();
             Image titleImg = titleObj.AddComponent<Image>();
@@ -512,28 +708,44 @@ namespace CaveSouls.Core.Editor
             titleImg.color = Color.white;
             titleImg.raycastTarget = false;
 
-            // "PRESS ANY BUTTON" Prompt
+            // "PRESS ANY BUTTON" Prompt with FromSoftware Dark Gradient Banner & Gold Rules
             GameObject pressAnyObj = CreateUIObject("PressAnyButtonGroup", canvasObj.transform);
             RectTransform pressAnyRect = pressAnyObj.GetComponent<RectTransform>();
             pressAnyRect.anchoredPosition = new Vector2(0f, -295f);
-            pressAnyRect.sizeDelta = new Vector2(600f, 50f);
+            pressAnyRect.sizeDelta = new Vector2(640f, 52f);
             CanvasGroup pressAnyCg = pressAnyObj.AddComponent<CanvasGroup>();
-            Text pressAnyTxt = pressAnyObj.AddComponent<Text>();
+
+            Image pressBannerImg = pressAnyObj.AddComponent<Image>();
+            pressBannerImg.sprite = uiDarkBannerSprite;
+            pressBannerImg.color = new Color(0.01f, 0.012f, 0.016f, 0.72f);
+            pressBannerImg.raycastTarget = false;
+
+            CreateOrnamentalRuleLine("TopGoldRule", pressAnyObj.transform, new Vector2(0f, 22f), new Vector2(420f, 1.5f));
+            CreateOrnamentalRuleLine("BottomGoldRule", pressAnyObj.transform, new Vector2(0f, -22f), new Vector2(420f, 1.5f));
+
+            GameObject pressTextObj = CreateUIObject("PressAnyLabel", pressAnyObj.transform);
+            StretchFullScreen(pressTextObj.GetComponent<RectTransform>());
+            Text pressAnyTxt = pressTextObj.AddComponent<Text>();
             pressAnyTxt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             pressAnyTxt.text = "-  P R E S S   A N Y   B U T T O N  -";
             pressAnyTxt.fontSize = 22;
             pressAnyTxt.alignment = TextAnchor.MiddleCenter;
-            pressAnyTxt.color = new Color(0.88f, 0.86f, 0.80f, 0.95f);
+            pressAnyTxt.color = new Color(0.90f, 0.87f, 0.80f, 0.96f);
 
             // Main Menu Buttons Container (CONTINUE, NEW GAME, SETTINGS, EXIT GAME)
             GameObject menuButtonsObj = CreateUIObject("MenuButtonsGroup", canvasObj.transform);
             RectTransform menuButtonsRect = menuButtonsObj.GetComponent<RectTransform>();
             menuButtonsRect.anchoredPosition = new Vector2(0f, -285f);
-            menuButtonsRect.sizeDelta = new Vector2(420f, 220f);
+            menuButtonsRect.sizeDelta = new Vector2(460f, 220f);
             CanvasGroup menuButtonsCg = menuButtonsObj.AddComponent<CanvasGroup>();
             menuButtonsCg.alpha = 0f;
             menuButtonsCg.interactable = false;
             menuButtonsCg.blocksRaycasts = false;
+
+            Image menuBgBanner = menuButtonsObj.AddComponent<Image>();
+            menuBgBanner.sprite = uiDarkBannerSprite;
+            menuBgBanner.color = new Color(0.01f, 0.012f, 0.018f, 0.65f);
+            menuBgBanner.raycastTarget = false;
 
             string[] btnTitles = { "C O N T I N U E", "N E W   G A M E", "S E T T I N G S", "E X I T   G A M E" };
             Button[] buttons = new Button[4];
@@ -574,7 +786,10 @@ namespace CaveSouls.Core.Editor
             settingsCg.interactable = false;
             settingsCg.blocksRaycasts = false;
             Image settingsBg = settingsObj.AddComponent<Image>();
-            settingsBg.color = new Color(0.03f, 0.03f, 0.04f, 0.92f);
+            settingsBg.color = new Color(0.02f, 0.022f, 0.03f, 0.94f);
+
+            CreateOrnamentalRuleLine("SettingsTopRule", settingsObj.transform, new Vector2(0f, 118f), new Vector2(480f, 1.5f));
+            CreateOrnamentalRuleLine("SettingsBottomRule", settingsObj.transform, new Vector2(0f, -118f), new Vector2(480f, 1.5f));
 
             GameObject settingsInfoObj = CreateUIObject("SettingsInfoLabel", settingsObj.transform);
             RectTransform settingsInfoRect = settingsInfoObj.GetComponent<RectTransform>();
@@ -609,7 +824,7 @@ namespace CaveSouls.Core.Editor
             GameObject blackFadeObj = CreateUIObject("ScreenBlackFadeGroup", canvasObj.transform);
             StretchFullScreen(blackFadeObj.GetComponent<RectTransform>());
             CanvasGroup blackFadeCg = blackFadeObj.AddComponent<CanvasGroup>();
-            blackFadeCg.alpha = 0f; // Set 0 in Editor so the Title & Cavern are immediately visible in Scene/Game View; Awake fades it in at runtime!
+            blackFadeCg.alpha = 0f; // Set 0 in Editor so Title & Cavern are immediately visible in Scene/Game View; Awake fades it in at runtime!
             blackFadeCg.blocksRaycasts = false;
             Image blackFadeImg = blackFadeObj.AddComponent<Image>();
             blackFadeImg.color = Color.black;
@@ -627,6 +842,8 @@ namespace CaveSouls.Core.Editor
             so.FindProperty("_newGameButton").objectReferenceValue = buttons[1];
             so.FindProperty("_settingsButton").objectReferenceValue = buttons[2];
             so.FindProperty("_exitButton").objectReferenceValue = buttons[3];
+            so.FindProperty("_bgmAudioSource").objectReferenceValue = bgmSource;
+            so.FindProperty("_targetBgmVolume").floatValue = 0.80f;
 
             SerializedProperty labelsProp = so.FindProperty("_buttonLabels");
             labelsProp.arraySize = 4;
@@ -640,6 +857,17 @@ namespace CaveSouls.Core.Editor
             UnityEditor.Events.UnityEventTools.AddPersistentListener(backBtn.onClick, menuCtrl.OnCloseSettingsClicked);
 
             EditorSceneManager.SaveScene(scene, MainMenuScenePath);
+        }
+
+        private static void CreateOrnamentalRuleLine(string name, Transform parent, Vector2 anchoredPos, Vector2 size)
+        {
+            GameObject lineObj = CreateUIObject(name, parent);
+            RectTransform rt = lineObj.GetComponent<RectTransform>();
+            rt.anchoredPosition = anchoredPos;
+            rt.sizeDelta = size;
+            Image img = lineObj.AddComponent<Image>();
+            img.color = new Color(0.55f, 0.47f, 0.33f, 0.38f); // Tarnished FromSoftware gold (#8C7853)
+            img.raycastTarget = false;
         }
 
         private static void RegisterScenesInBuildSettings()

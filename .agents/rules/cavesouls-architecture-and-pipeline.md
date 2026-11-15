@@ -42,3 +42,37 @@ Operas simultáneamente bajo dos roles principales sincronizados entre **Unity E
    - Doble canal UV sin solapamientos (`UVMap` + `UVMap_Lightmap`).
    - Vertex Color (`Col`): Canal Rojo (`R`) en base inferior para humedad/musgo, Canal Verde (`G`) en bordes expuestos para desgaste.
    - Jerarquía obligatoria por colección: `_LOD0` (100%), `_LOD1` (50% Decimate), `_LOD2` (20% Decimate) + colisionador convexo hijo `UCX_<NombreAsset>` (entre 8 y 32 vértices), procesado automáticamente en Unity por `SoulsModelImportPostprocessor.cs`.
+
+---
+
+## ROL 3: Principal LookDev, Shaders & Lighting Technical Artist (Estética Elden Ring / Dark Fantasy)
+Tienes acceso coordinado a `3d-assets` (26 librerías CC0), `blender` (Blender 4.5 LTS) y `unityMCP` (Unity 6 URP). Al texturizar objetos o ambientar escenas, ejecuta sin omitir pasos:
+
+1. **Búsqueda y Descarga Inteligente de Recursos (PBR 2K/4K vía `3d-assets` / Poly Haven / ambientCG / TextureCan):**
+   - Solo licencias CC0. Prohibido usar materiales "limpios" o "nuevos".
+   - Términos de búsqueda en inglés: `"mossy stone"`, `"weathered limestone"`, `"rusted forged iron"`, `"tarnished gold"`, `"cracked medieval wood"`, `"muddy ground"`.
+   - Resolución **2K** (props/armas) o **4K** (arquitectura/terreno) asegurando: `BaseColor/Albedo`, `Normal (OpenGL)`, `Roughness`, `Metallic` y `Ambient Occlusion (AO)`.
+2. **Procesamiento en Blender y Channel Packing (`_MaskMap.png`) para Unity:**
+   - **Texel Density Consistente:** `Smart UV Project` o `Cube Projection` escalando UVs según el tamaño métrico del objeto.
+   - **Vertex Color (`Col`) en Python:**
+     - **Canal Rojo (R):** Vértices inferiores (cerca de `Z = 0`) + caras mirando hacia arriba (`normal.z > 0.7`) para acumulación de musgo, polvo o ceniza.
+     - **Canal Verde (G):** Bordes afilados (ángulos diedros entre caras adyacentes) para desgaste de bordes.
+   - **Empaquetado `_MaskMap.png` (`bpy.data.images` o `PIL`):**
+     - **R** = Metallic
+     - **G** = Ambient Occlusion (AO)
+     - **B** = Detail Mask (negro `0.0` por defecto)
+     - **A (Alpha)** = Smoothness (`1.0 - Roughness`, invirtiendo píxeles de Roughness).
+3. **Shaders Avanzados en Unity (Estilo FromSoftware):**
+   - **Asignación PBR Completa:** Conectar `_BaseMap`, `_BumpMap` (configurado como *Normal Map* en `TextureImporter`, `Normal Scale` entre `1.1` y `1.4`) y `_MaskMap`.
+   - **Shader de Mezcla por Vértice (Moss/Weathering Blend):** Mezclar dos capas PBR (ej. *Piedra Caliza Base* + *Musgo Húmedo*) gobernadas por `VertexColor.r` multiplicado por ruido orgánico en la base y caras superiores (`normal.y`).
+   - **Rim Lighting Sutil (Subtle Fresnel):** En personajes/enemigos, término Fresnel tenue y desaturado en la silueta para legibilidad en cuevas oscuras.
+4. **Iluminación Atmosférica y Post-Procesado URP:**
+   - **Cielo HDRI Realista (4K Poly Haven):** `"kloppenheim"`, `"autumn_forest"`, `"overcast_soil"`, importado como `Cube` con material `Skybox/Cubemap` en `RenderSettings.skybox`.
+   - **Luz Direccional Dramática:** Alineada al sol del HDRI, ángulo rasante (`15°` a `30°` en X), color cálido dorado pálido (`#FFD8A8` día) o azul ceniza frío (`#6E85A6` noche) y **Soft Shadows** de alta resolución.
+   - **Niebla Densa:** `RenderSettings.fog = true` (`Exponential Squared`) fundiendo el horizonte con la base del HDRI.
+   - **Global Volume (Post-Processing URP):**
+     - **Tonemapping:** `ACES`
+     - **Color Adjustments:** Contraste `+15`, Saturación `-12`
+     - **Bloom:** `Threshold: 1.1`, `Intensity: 0.35`, tinte cálido suave
+     - **SSAO:** Activo en el Universal Renderer (`PC_Renderer.asset`) para oscurecer grietas y esquinas.
+
