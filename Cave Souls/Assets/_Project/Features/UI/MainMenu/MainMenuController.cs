@@ -8,23 +8,41 @@ using UnityEngine.UI;
 namespace CaveSouls.Features.UI
 {
     /// <summary>
-    /// Zero-Allocation Souls-like Main Menu Controller.
-    /// Manages the "PRESS ANY BUTTON" title state, the main menu button list (CONTINUE, NEW GAME, SETTINGS, EXIT),
-    /// English / Spanish language selection in Settings, looping Main Menu OST fade-in/out,
-    /// save file detection, and transitions to 02_IntroCinematic (New Game) or SampleScene (Continue).
+    /// Zero-Allocation Souls-like Main Menu & Pre-Menu Splash Controller.
+    /// Sequence:
+    /// 1. Pre-Menu Splash Sequence ("Made with Unity" -> transition to "Beyond Game Studios" black logo on white backdrop).
+    /// 2. Fade-In to CAVE SOULS Title & 3D Cavern Diorama with looping "Beneath_the_Sealed_Sky.ogg" OST.
+    /// 3. Interactive Menu (CONTINUE, NEW GAME, SETTINGS with EN/ES toggle, EXIT GAME) supporting Mouse, Keyboard, and Gamepad.
+    /// 4. Clicking NEW GAME transitions directly into the 1:33 (93.3s) Intro Cinematic.
     /// </summary>
     public sealed class MainMenuController : MonoBehaviour
     {
         private enum MenuState : byte
         {
-            FadeInTitle = 0,
-            WaitingForAnyButton = 1,
-            MainButtonsActive = 2,
-            SettingsPanelActive = 3,
-            TransitioningToGame = 4
+            SplashUnityFadeIn = 0,
+            SplashUnityHold = 1,
+            SplashUnityFadeOut = 2,
+            SplashStudioFadeIn = 3,
+            SplashStudioHold = 4,
+            SplashStudioFadeOut = 5,
+            FadeInTitle = 6,
+            WaitingForAnyButton = 7,
+            MainButtonsActive = 8,
+            SettingsPanelActive = 9,
+            TransitioningToGame = 10,
+            PlayingIntroCinematic = 11
         }
 
-        [Header("UI Canvas Groups")]
+        [Header("Pre-Menu Splash Screen UI")]
+        [SerializeField] private CanvasGroup _splashRootGroup;
+        [SerializeField] private CanvasGroup _splashUnityGroup;
+        [SerializeField] private RectTransform _splashUnityRect;
+        [SerializeField] private CanvasGroup _splashStudioGroup;
+        [SerializeField] private RectTransform _splashStudioRect;
+
+        [Header("Main Menu UI Canvas Groups")]
+        [SerializeField] private Canvas _mainCanvas;
+        [SerializeField] private Camera _uiCamera;
         [SerializeField] private CanvasGroup _screenBlackFadeGroup;
         [SerializeField] private CanvasGroup _titleLogoGroup;
         [SerializeField] private CanvasGroup _pressAnyButtonGroup;
@@ -36,25 +54,30 @@ namespace CaveSouls.Features.UI
         [SerializeField] private Button _newGameButton;
         [SerializeField] private Button _settingsButton;
         [SerializeField] private Button _exitButton;
+        [SerializeField] private RectTransform[] _buttonRects;
         [SerializeField] private Text[] _buttonLabels;
         [SerializeField] private Text _pressAnyButtonLabel;
 
         [Header("Settings & Localization UI")]
         [SerializeField] private Button _languageToggleButton;
+        [SerializeField] private RectTransform _languageButtonRect;
         [SerializeField] private Text _languageButtonLabel;
         [SerializeField] private Text _settingsHeaderLabel;
+        [SerializeField] private Button _closeSettingsButton;
+        [SerializeField] private RectTransform _closeSettingsRect;
         [SerializeField] private Text _backButtonLabel;
 
         [Header("Audio (Main Menu Looping OST)")]
         [SerializeField] private AudioSource _bgmAudioSource;
         [SerializeField] private float _targetBgmVolume = 0.80f;
 
-        [Header("Scene Navigation")]
+        [Header("Intro Cinematic & Scene Navigation")]
+        [SerializeField] private IntroCinematicController _embeddedIntroCinematic;
         [SerializeField] private string _introCinematicSceneName = "02_IntroCinematic";
         [SerializeField] private string _gameplaySceneName = "SampleScene";
         [SerializeField] private string _saveFileName = "cavesouls_save01.dat";
 
-        private MenuState _state = MenuState.FadeInTitle;
+        private MenuState _state;
         private float _stateTimer;
         private int _selectedIndex;
         private bool _hasSaveFile;
@@ -87,6 +110,9 @@ namespace CaveSouls.Features.UI
             string savePath = Path.Combine(Application.persistentDataPath, _saveFileName);
             _hasSaveFile = File.Exists(savePath);
 
+            if (_mainCanvas == null) TryGetComponent(out _mainCanvas);
+            if (_uiCamera == null && _mainCanvas != null) _uiCamera = _mainCanvas.worldCamera;
+
             if (_continueButton != null)
             {
                 _continueButton.interactable = _hasSaveFile;
@@ -96,9 +122,44 @@ namespace CaveSouls.Features.UI
             if (_settingsButton != null) _settingsButton.onClick.AddListener(OnSettingsClicked);
             if (_exitButton != null) _exitButton.onClick.AddListener(OnExitClicked);
             if (_languageToggleButton != null) _languageToggleButton.onClick.AddListener(OnToggleLanguageClicked);
+            if (_closeSettingsButton != null) _closeSettingsButton.onClick.AddListener(OnCloseSettingsClicked);
 
             _selectedIndex = _hasSaveFile ? 0 : 1;
 
+            SetGroup(_titleLogoGroup, 0f, false);
+            SetGroup(_pressAnyButtonGroup, 0f, false);
+            SetGroup(_menuButtonsGroup, 0f, false);
+            SetGroup(_settingsPanelGroup, 0f, false);
+
+            bool showPreMenuSplash = (_splashRootGroup != null) && !SplashScreenController.HasCompletedSplashThisSession;
+            if (showPreMenuSplash)
+            {
+                _state = MenuState.SplashUnityFadeIn;
+                SetGroup(_splashRootGroup, 1f, true);
+                SetGroup(_splashUnityGroup, 0f, false);
+                SetGroup(_splashStudioGroup, 0f, false);
+                SetGroup(_screenBlackFadeGroup, 1f, false);
+                if (_bgmAudioSource != null)
+                {
+                    _bgmAudioSource.loop = true;
+                    _bgmAudioSource.volume = 0f;
+                    _bgmAudioSource.Stop();
+                }
+            }
+            else
+            {
+                _state = MenuState.FadeInTitle;
+                SetGroup(_splashRootGroup, 0f, false);
+                SetGroup(_screenBlackFadeGroup, 1f, false);
+                StartMainMenuBgm();
+            }
+
+            RefreshLocalizedTexts();
+            RefreshButtonVisuals();
+        }
+
+        private void StartMainMenuBgm()
+        {
             if (_bgmAudioSource != null)
             {
                 _bgmAudioSource.loop = true;
@@ -108,24 +169,18 @@ namespace CaveSouls.Features.UI
                     _bgmAudioSource.Play();
                 }
             }
-
-            SetGroup(_screenBlackFadeGroup, 1f, false);
-            SetGroup(_titleLogoGroup, 0f, false);
-            SetGroup(_pressAnyButtonGroup, 0f, false);
-            SetGroup(_menuButtonsGroup, 0f, false);
-            SetGroup(_settingsPanelGroup, 0f, false);
-
-            RefreshLocalizedTexts();
-            RefreshButtonVisuals();
         }
 
         private void Update()
         {
+            if (_state == MenuState.PlayingIntroCinematic) return;
+
             float dt = Time.unscaledDeltaTime;
             _stateTimer += dt;
             if (_navCooldownTimer > 0f) _navCooldownTimer -= dt;
 
-            if (_bgmAudioSource != null && _state != MenuState.TransitioningToGame)
+            // Fade in Main Menu BGM once past the Splash Screen sequence
+            if (_state >= MenuState.FadeInTitle && _state < MenuState.TransitioningToGame && _bgmAudioSource != null)
             {
                 if (_bgmAudioSource.volume < _targetBgmVolume)
                 {
@@ -135,6 +190,67 @@ namespace CaveSouls.Features.UI
 
             switch (_state)
             {
+                // --- STEP 1: MADE WITH UNITY SPLASH ---
+                case MenuState.SplashUnityFadeIn:
+                    SetGroup(_splashUnityGroup, Mathf.Clamp01(_stateTimer / 0.9f), false);
+                    UpdateSplashScale(_splashUnityRect, 0.95f, 0.98f, _stateTimer / 0.9f);
+                    if (_stateTimer >= 0.9f || (_stateTimer > 0.3f && WasAnyInputPressedThisFrame()))
+                    {
+                        SetGroup(_splashUnityGroup, 1f, false);
+                        ChangeState(MenuState.SplashUnityHold);
+                    }
+                    break;
+
+                case MenuState.SplashUnityHold:
+                    UpdateSplashScale(_splashUnityRect, 0.98f, 1.01f, _stateTimer / 1.5f);
+                    if (_stateTimer >= 1.5f || WasAnyInputPressedThisFrame())
+                    {
+                        ChangeState(MenuState.SplashUnityFadeOut);
+                    }
+                    break;
+
+                case MenuState.SplashUnityFadeOut:
+                    SetGroup(_splashUnityGroup, 1f - Mathf.Clamp01(_stateTimer / 0.8f), false);
+                    if (_stateTimer >= 0.8f)
+                    {
+                        SetGroup(_splashUnityGroup, 0f, false);
+                        ChangeState(MenuState.SplashStudioFadeIn);
+                    }
+                    break;
+
+                // --- STEP 2: BEYOND GAME STUDIOS LOGO SPLASH ---
+                case MenuState.SplashStudioFadeIn:
+                    SetGroup(_splashStudioGroup, Mathf.Clamp01(_stateTimer / 1.0f), false);
+                    UpdateSplashScale(_splashStudioRect, 0.95f, 0.99f, _stateTimer / 1.0f);
+                    if (_stateTimer >= 1.0f || (_stateTimer > 0.3f && WasAnyInputPressedThisFrame()))
+                    {
+                        SetGroup(_splashStudioGroup, 1f, false);
+                        ChangeState(MenuState.SplashStudioHold);
+                    }
+                    break;
+
+                case MenuState.SplashStudioHold:
+                    UpdateSplashScale(_splashStudioRect, 0.99f, 1.02f, _stateTimer / 1.8f);
+                    if (_stateTimer >= 1.8f || WasAnyInputPressedThisFrame())
+                    {
+                        ChangeState(MenuState.SplashStudioFadeOut);
+                    }
+                    break;
+
+                case MenuState.SplashStudioFadeOut:
+                    float studioOut = 1f - Mathf.Clamp01(_stateTimer / 0.9f);
+                    SetGroup(_splashStudioGroup, studioOut, false);
+                    if (_stateTimer >= 0.9f)
+                    {
+                        SetGroup(_splashStudioGroup, 0f, false);
+                        SetGroup(_splashRootGroup, 0f, false);
+                        SplashScreenController.HasCompletedSplashThisSession = true;
+                        StartMainMenuBgm();
+                        ChangeState(MenuState.FadeInTitle);
+                    }
+                    break;
+
+                // --- STEP 3: CAVE SOULS MAIN MENU ---
                 case MenuState.FadeInTitle:
                     float fadeOutBlack = 1f - Mathf.Clamp01(_stateTimer / 1.4f);
                     float titleAlpha = Mathf.Clamp01((_stateTimer - 0.3f) / 1.4f);
@@ -145,8 +261,7 @@ namespace CaveSouls.Features.UI
                     {
                         SetGroup(_screenBlackFadeGroup, 0f, false);
                         SetGroup(_titleLogoGroup, 1f, false);
-                        _state = MenuState.WaitingForAnyButton;
-                        _stateTimer = 0f;
+                        ChangeState(MenuState.WaitingForAnyButton);
                     }
                     break;
 
@@ -158,14 +273,13 @@ namespace CaveSouls.Features.UI
                     {
                         SetGroup(_pressAnyButtonGroup, 0f, false);
                         SetGroup(_menuButtonsGroup, 1f, true);
-                        _state = MenuState.MainButtonsActive;
-                        _stateTimer = 0f;
+                        ChangeState(MenuState.MainButtonsActive);
                         RefreshButtonVisuals();
                     }
                     break;
 
                 case MenuState.MainButtonsActive:
-                    HandleKeyboardAndGamepadMenuNavigation();
+                    HandleMouseKeyboardAndGamepadMenuNavigation();
                     break;
 
                 case MenuState.SettingsPanelActive:
@@ -173,35 +287,47 @@ namespace CaveSouls.Features.UI
                     break;
 
                 case MenuState.TransitioningToGame:
-                    float blackAlpha = Mathf.Clamp01(_stateTimer / 1.1f);
+                    float blackAlpha = Mathf.Clamp01(_stateTimer / 1.0f);
                     SetGroup(_screenBlackFadeGroup, blackAlpha, true);
                     if (_bgmAudioSource != null)
                     {
                         _bgmAudioSource.volume = Mathf.Lerp(_targetBgmVolume, 0f, blackAlpha);
                     }
-                    if (_stateTimer >= 1.15f && !_asyncLoadTriggered)
+                    if (_stateTimer >= 1.05f && !_asyncLoadTriggered)
                     {
                         _asyncLoadTriggered = true;
-                        LoadTargetScene();
+                        if (_bgmAudioSource != null) _bgmAudioSource.Stop();
+                        TriggerNewGameOrContinue();
                     }
                     break;
             }
         }
 
+        private void ChangeState(MenuState nextState)
+        {
+            _state = nextState;
+            _stateTimer = 0f;
+        }
+
+        private static void UpdateSplashScale(RectTransform rt, float fromScale, float toScale, float t)
+        {
+            if (rt == null) return;
+            float s = Mathf.Lerp(fromScale, toScale, Mathf.Clamp01(t));
+            rt.localScale = new Vector3(s, s, 1f);
+        }
+
         public void OnContinueClicked()
         {
-            if (!_hasSaveFile || _state == MenuState.TransitioningToGame) return;
+            if (!_hasSaveFile || _state == MenuState.TransitioningToGame || _state == MenuState.PlayingIntroCinematic) return;
             _isStartingNewGame = false;
-            _state = MenuState.TransitioningToGame;
-            _stateTimer = 0f;
+            ChangeState(MenuState.TransitioningToGame);
         }
 
         public void OnNewGameClicked()
         {
-            if (_state == MenuState.TransitioningToGame) return;
+            if (_state == MenuState.TransitioningToGame || _state == MenuState.PlayingIntroCinematic) return;
             _isStartingNewGame = true;
-            _state = MenuState.TransitioningToGame;
-            _stateTimer = 0f;
+            ChangeState(MenuState.TransitioningToGame);
         }
 
         public void OnSettingsClicked()
@@ -209,8 +335,7 @@ namespace CaveSouls.Features.UI
             if (_state != MenuState.MainButtonsActive) return;
             SetGroup(_menuButtonsGroup, 0f, false);
             SetGroup(_settingsPanelGroup, 1f, true);
-            _state = MenuState.SettingsPanelActive;
-            _stateTimer = 0f;
+            ChangeState(MenuState.SettingsPanelActive);
             RefreshLocalizedTexts();
         }
 
@@ -224,8 +349,7 @@ namespace CaveSouls.Features.UI
         {
             SetGroup(_settingsPanelGroup, 0f, false);
             SetGroup(_menuButtonsGroup, 1f, true);
-            _state = MenuState.MainButtonsActive;
-            _stateTimer = 0f;
+            ChangeState(MenuState.MainButtonsActive);
         }
 
         public void OnExitClicked()
@@ -239,6 +363,24 @@ namespace CaveSouls.Features.UI
 
         private void HandleSettingsPanelInput()
         {
+            // Direct Mouse Click Hit-Testing on Settings Panel Buttons (Zero-GC)
+            if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame && _stateTimer > 0.1f)
+            {
+                Vector2 mousePos = Mouse.current.position.ReadValue();
+                if (_languageButtonRect != null &&
+                    RectTransformUtility.RectangleContainsScreenPoint(_languageButtonRect, mousePos, _uiCamera))
+                {
+                    OnToggleLanguageClicked();
+                    return;
+                }
+                if (_closeSettingsRect != null &&
+                    RectTransformUtility.RectangleContainsScreenPoint(_closeSettingsRect, mousePos, _uiCamera))
+                {
+                    OnCloseSettingsClicked();
+                    return;
+                }
+            }
+
             if (Keyboard.current != null)
             {
                 if (Keyboard.current.escapeKey.wasPressedThisFrame)
@@ -275,8 +417,36 @@ namespace CaveSouls.Features.UI
             }
         }
 
-        private void HandleKeyboardAndGamepadMenuNavigation()
+        private void HandleMouseKeyboardAndGamepadMenuNavigation()
         {
+            // 1. Direct Mouse Hover & Left-Click Detection (Zero-GC, works regardless of EventSystem focus)
+            if (Mouse.current != null && _buttonRects != null)
+            {
+                Vector2 mousePos = Mouse.current.position.ReadValue();
+                for (int i = 0; i < _buttonRects.Length; i++)
+                {
+                    if (_buttonRects[i] == null) continue;
+                    if (i == 0 && !_hasSaveFile) continue;
+
+                    if (RectTransformUtility.RectangleContainsScreenPoint(_buttonRects[i], mousePos, _uiCamera))
+                    {
+                        if (_selectedIndex != i)
+                        {
+                            _selectedIndex = i;
+                            RefreshButtonVisuals();
+                        }
+
+                        if (Mouse.current.leftButton.wasPressedThisFrame && _stateTimer > 0.1f)
+                        {
+                            ExecuteSelectedMenuOption();
+                            return;
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // 2. Keyboard & Gamepad Navigation
             int moveDir = 0;
             if (_navCooldownTimer <= 0f)
             {
@@ -308,15 +478,20 @@ namespace CaveSouls.Features.UI
                 (Keyboard.current != null && (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.spaceKey.wasPressedThisFrame)) ||
                 (Gamepad.current != null && Gamepad.current.buttonSouth.wasPressedThisFrame);
 
-            if (confirmPressed)
+            if (confirmPressed && _stateTimer > 0.1f)
             {
-                switch (_selectedIndex)
-                {
-                    case 0: OnContinueClicked(); break;
-                    case 1: OnNewGameClicked(); break;
-                    case 2: OnSettingsClicked(); break;
-                    case 3: OnExitClicked(); break;
-                }
+                ExecuteSelectedMenuOption();
+            }
+        }
+
+        private void ExecuteSelectedMenuOption()
+        {
+            switch (_selectedIndex)
+            {
+                case 0: OnContinueClicked(); break;
+                case 1: OnNewGameClicked(); break;
+                case 2: OnSettingsClicked(); break;
+                case 3: OnExitClicked(); break;
             }
         }
 
@@ -403,8 +578,18 @@ namespace CaveSouls.Features.UI
             return false;
         }
 
-        private void LoadTargetScene()
+        private void TriggerNewGameOrContinue()
         {
+            if (_isStartingNewGame && _embeddedIntroCinematic != null)
+            {
+                SetGroup(_titleLogoGroup, 0f, false);
+                SetGroup(_menuButtonsGroup, 0f, false);
+                SetGroup(_settingsPanelGroup, 0f, false);
+                ChangeState(MenuState.PlayingIntroCinematic);
+                _embeddedIntroCinematic.PlayCinematic();
+                return;
+            }
+
             string targetScene = _isStartingNewGame ? _introCinematicSceneName : _gameplaySceneName;
             if (Application.CanStreamedLevelBeLoaded(targetScene))
             {

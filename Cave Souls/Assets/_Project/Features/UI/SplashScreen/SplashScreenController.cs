@@ -14,6 +14,8 @@ namespace CaveSouls.Features.UI
     /// </summary>
     public sealed class SplashScreenController : MonoBehaviour
     {
+        public static bool HasCompletedSplashThisSession;
+
         private enum SplashStep : byte
         {
             InitialDelay = 0,
@@ -101,7 +103,7 @@ namespace CaveSouls.Features.UI
                         SetGroupState(_unityLogoGroup, 0f);
                         ChangeStep(SplashStep.IntermissionDelay);
                     }
-                    break;
+                break;
 
                 case SplashStep.IntermissionDelay:
                     if (_stepTimer >= _intermissionDelay) ChangeStep(SplashStep.StudioFadeIn);
@@ -133,6 +135,7 @@ namespace CaveSouls.Features.UI
                     if (!_asyncLoadStarted)
                     {
                         _asyncLoadStarted = true;
+                        HasCompletedSplashThisSession = true;
                         LoadNextSceneSafe();
                     }
                     break;

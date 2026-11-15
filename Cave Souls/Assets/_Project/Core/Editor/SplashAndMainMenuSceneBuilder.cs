@@ -4,6 +4,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.UI;
@@ -42,7 +43,7 @@ namespace CaveSouls.Core.Editor
 
             BuildSplashScreenScene(unityCubeEmblemSprite);
             BuildIntroCinematicScene(introData, uiDarkBannerSprite);
-            BuildMainMenuScene(rockMat, godRayMat, mistParticleMat, emberParticleMat, eldenRingProfile, uiDarkBannerSprite);
+            BuildMainMenuScene(rockMat, godRayMat, mistParticleMat, emberParticleMat, eldenRingProfile, uiDarkBannerSprite, introData);
             RegisterScenesInBuildSettings();
 
             AssetDatabase.SaveAssets();
@@ -401,11 +402,14 @@ namespace CaveSouls.Core.Editor
 
             // Fullscreen Black Background
             GameObject bgObj = CreateUIObject("BlackBackground", canvasObj.transform);
-            StretchFullScreen(bgObj.GetComponent<RectTransform>());
-            Image bgImg = bgObj.AddComponent<Image>();
+            RectTransform bgRect = bgObj.GetComponent<RectTransform>();
+            bgRect.anchoredPosition = Vector2.zero;
+            bgRect.sizeDelta = new Vector2(1920f, 1080f);
+            RawImage bgImg = bgObj.AddComponent<RawImage>();
             bgImg.color = Color.black;
 
             // Step 1: Made with Unity Container
+            Texture2D unityCubeTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/_Project/Art/UI/UI_UnityCubeEmblem.png");
             GameObject unityGroupObj = CreateUIObject("UnityLogoGroup", canvasObj.transform);
             RectTransform unityRect = unityGroupObj.GetComponent<RectTransform>();
             unityRect.sizeDelta = new Vector2(600f, 380f);
@@ -415,9 +419,8 @@ namespace CaveSouls.Core.Editor
             RectTransform cubeRect = cubeIconObj.GetComponent<RectTransform>();
             cubeRect.anchoredPosition = new Vector2(0f, 65f);
             cubeRect.sizeDelta = new Vector2(140f, 140f);
-            Image cubeImg = cubeIconObj.AddComponent<Image>();
-            cubeImg.sprite = unityCubeEmblemSprite;
-            cubeImg.preserveAspect = true;
+            RawImage cubeImg = cubeIconObj.AddComponent<RawImage>();
+            cubeImg.texture = unityCubeTex;
             cubeImg.color = Color.white;
 
             GameObject madeWithObj = CreateUIObject("MadeWithLabel", unityGroupObj.transform);
@@ -443,15 +446,23 @@ namespace CaveSouls.Core.Editor
             unityTxt.alignment = TextAnchor.MiddleCenter;
             unityTxt.color = Color.white;
 
-            // Step 2: Beyond Game Studios Logo Container
-            Sprite studioSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/_Project/Art/UI/UI_Logo_BeyondGameStudios.png");
+            // Step 2: Beyond Game Studios Logo Container (using beyondgamestudios_black_logo.png on clean white card)
+            Texture2D studioBlackTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/_Project/Art/UI/UI_Logo_BeyondGameStudios_Black.png")
+                                       ?? AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/_Project/Art/UI/UI_Logo_BeyondGameStudios.png");
             GameObject studioGroupObj = CreateUIObject("BeyondGameStudiosLogoGroup", canvasObj.transform);
             RectTransform studioRect = studioGroupObj.GetComponent<RectTransform>();
-            studioRect.sizeDelta = new Vector2(680f, 680f);
+            studioRect.anchoredPosition = Vector2.zero;
+            studioRect.sizeDelta = new Vector2(1920f, 1080f);
             CanvasGroup studioCg = studioGroupObj.AddComponent<CanvasGroup>();
-            Image studioImg = studioGroupObj.AddComponent<Image>();
-            studioImg.sprite = studioSprite;
-            studioImg.preserveAspect = true;
+            RawImage studioWhiteBg = studioGroupObj.AddComponent<RawImage>();
+            studioWhiteBg.color = Color.white;
+
+            GameObject studioLogoArtObj = CreateUIObject("StudioBlackLogoArt", studioGroupObj.transform);
+            RectTransform studioLogoArtRect = studioLogoArtObj.GetComponent<RectTransform>();
+            studioLogoArtRect.anchoredPosition = Vector2.zero;
+            studioLogoArtRect.sizeDelta = new Vector2(680f, 680f);
+            RawImage studioImg = studioLogoArtObj.AddComponent<RawImage>();
+            studioImg.texture = studioBlackTex;
             studioImg.color = Color.white;
 
             // Attach & Wire SplashScreenController
@@ -460,7 +471,7 @@ namespace CaveSouls.Core.Editor
             so.FindProperty("_unityLogoGroup").objectReferenceValue = unityCg;
             so.FindProperty("_unityLogoRect").objectReferenceValue = unityRect;
             so.FindProperty("_studioLogoGroup").objectReferenceValue = studioCg;
-            so.FindProperty("_studioLogoRect").objectReferenceValue = studioRect;
+            so.FindProperty("_studioLogoRect").objectReferenceValue = studioLogoArtRect;
             so.FindProperty("_nextSceneName").stringValue = "01_MainMenu";
             so.ApplyModifiedPropertiesWithoutUndo();
 
@@ -473,7 +484,8 @@ namespace CaveSouls.Core.Editor
             Material mistParticleMat,
             Material emberParticleMat,
             VolumeProfile eldenRingProfile,
-            Sprite uiDarkBannerSprite)
+            Sprite uiDarkBannerSprite,
+            IntroCinematicDataSO introData)
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -749,6 +761,7 @@ namespace CaveSouls.Core.Editor
             pressAnyTxt.fontSize = 22;
             pressAnyTxt.alignment = TextAnchor.MiddleCenter;
             pressAnyTxt.color = new Color(0.90f, 0.87f, 0.80f, 0.96f);
+            pressAnyTxt.raycastTarget = false;
 
             // Main Menu Buttons Container (CONTINUE, NEW GAME, SETTINGS, EXIT GAME)
             GameObject menuButtonsObj = CreateUIObject("MenuButtonsGroup", canvasObj.transform);
@@ -768,6 +781,7 @@ namespace CaveSouls.Core.Editor
             string[] btnTitles = { "C O N T I N U E", "N E W   G A M E", "S E T T I N G S", "E X I T   G A M E" };
             Button[] buttons = new Button[4];
             Text[] btnLabels = new Text[4];
+            RectTransform[] btnRects = new RectTransform[4];
 
             for (int i = 0; i < 4; i++)
             {
@@ -775,9 +789,11 @@ namespace CaveSouls.Core.Editor
                 RectTransform bRect = bObj.GetComponent<RectTransform>();
                 bRect.anchoredPosition = new Vector2(0f, 68f - (i * 46f));
                 bRect.sizeDelta = new Vector2(380f, 38f);
+                btnRects[i] = bRect;
 
                 Image bImg = bObj.AddComponent<Image>();
-                bImg.color = new Color(0f, 0f, 0f, 0.01f); // Transparent clickable hitbox
+                bImg.color = new Color(0f, 0f, 0f, 0.02f); // Clickable hitbox
+                bImg.raycastTarget = true;
 
                 Button btn = bObj.AddComponent<Button>();
                 btn.targetGraphic = bImg;
@@ -791,6 +807,7 @@ namespace CaveSouls.Core.Editor
                 lbl.fontSize = 22;
                 lbl.alignment = TextAnchor.MiddleCenter;
                 lbl.color = Color.white;
+                lbl.raycastTarget = false;
                 btnLabels[i] = lbl;
             }
 
@@ -819,6 +836,7 @@ namespace CaveSouls.Core.Editor
             settingsHeaderTxt.fontSize = 19;
             settingsHeaderTxt.alignment = TextAnchor.MiddleCenter;
             settingsHeaderTxt.color = new Color(0.92f, 0.88f, 0.78f, 1f);
+            settingsHeaderTxt.raycastTarget = false;
 
             // Interactive Language Selector Button (< ENGLISH / ESPAÑOL >)
             GameObject langBtnObj = CreateUIObject("Btn_ToggleLanguage", settingsObj.transform);
@@ -838,6 +856,7 @@ namespace CaveSouls.Core.Editor
             langLbl.fontSize = 18;
             langLbl.alignment = TextAnchor.MiddleCenter;
             langLbl.color = new Color(1.0f, 0.95f, 0.82f, 1f);
+            langLbl.raycastTarget = false;
 
             GameObject backBtnObj = CreateUIObject("Btn_CloseSettings", settingsObj.transform);
             RectTransform backBtnRect = backBtnObj.GetComponent<RectTransform>();
@@ -856,6 +875,7 @@ namespace CaveSouls.Core.Editor
             backLbl.fontSize = 18;
             backLbl.alignment = TextAnchor.MiddleCenter;
             backLbl.color = Color.white;
+            backLbl.raycastTarget = false;
 
             // Fullscreen Black Fade Overlay (for smooth scene entry & exit)
             GameObject blackFadeObj = CreateUIObject("ScreenBlackFadeGroup", canvasObj.transform);
@@ -863,35 +883,247 @@ namespace CaveSouls.Core.Editor
             CanvasGroup blackFadeCg = blackFadeObj.AddComponent<CanvasGroup>();
             blackFadeCg.alpha = 0f; // Set 0 in Editor so Title & Cavern are immediately visible in Scene/Game View; Awake fades it in at runtime!
             blackFadeCg.blocksRaycasts = false;
-            Image blackFadeImg = blackFadeObj.AddComponent<Image>();
+            RawImage blackFadeImg = blackFadeObj.AddComponent<RawImage>();
             blackFadeImg.color = Color.black;
             blackFadeImg.raycastTarget = false;
+
+            // =========================================================================
+            // PRE-MENU SPLASH SCREEN OVERLAY ("MADE WITH UNITY" -> "BEYOND GAME STUDIOS")
+            // Ensures pressing Play directly inside 01_MainMenu.unity plays the Splash first!
+            // =========================================================================
+            GameObject splashRootObj = CreateUIObject("PreMenuSplashRootGroup", canvasObj.transform);
+            StretchFullScreen(splashRootObj.GetComponent<RectTransform>());
+            CanvasGroup splashRootCg = splashRootObj.AddComponent<CanvasGroup>();
+            splashRootCg.alpha = 0f; // 0 in Edit Mode so Scene/Game View previews the 3D Cavern; Awake sets 1 at runtime!
+            splashRootCg.interactable = false;
+            splashRootCg.blocksRaycasts = false;
+
+            RawImage splashBlackBg = splashRootObj.AddComponent<RawImage>();
+            splashBlackBg.color = Color.black;
+            splashBlackBg.raycastTarget = false;
+
+            // Phase 1: "MADE WITH UNITY" on Black
+            GameObject splashUnityGroupObj = CreateUIObject("SplashUnityLogoGroup", splashRootObj.transform);
+            RectTransform splashUnityRect = splashUnityGroupObj.GetComponent<RectTransform>();
+            splashUnityRect.sizeDelta = new Vector2(600f, 320f);
+            CanvasGroup splashUnityCg = splashUnityGroupObj.AddComponent<CanvasGroup>();
+            splashUnityCg.alpha = 0f;
+
+            GameObject splashCubeIconObj = CreateUIObject("UnityCubeEmblem", splashUnityGroupObj.transform);
+            RectTransform splashCubeRect = splashCubeIconObj.GetComponent<RectTransform>();
+            splashCubeRect.anchoredPosition = new Vector2(0f, 45f);
+            splashCubeRect.sizeDelta = new Vector2(128f, 128f);
+            RawImage splashCubeImg = splashCubeIconObj.AddComponent<RawImage>();
+            splashCubeImg.texture = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/_Project/Art/UI/UI_UnityCubeEmblem.png");
+            splashCubeImg.color = Color.white;
+            splashCubeImg.raycastTarget = false;
+
+            GameObject splashMadeWithTextObj = CreateUIObject("MadeWithLabel", splashUnityGroupObj.transform);
+            RectTransform splashMadeWithRect = splashMadeWithTextObj.GetComponent<RectTransform>();
+            splashMadeWithRect.anchoredPosition = new Vector2(0f, -45f);
+            splashMadeWithRect.sizeDelta = new Vector2(500f, 40f);
+            Text splashMadeWithTxt = splashMadeWithTextObj.AddComponent<Text>();
+            splashMadeWithTxt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            splashMadeWithTxt.text = "M A D E   W I T H";
+            splashMadeWithTxt.fontSize = 18;
+            splashMadeWithTxt.alignment = TextAnchor.MiddleCenter;
+            splashMadeWithTxt.color = new Color(0.75f, 0.75f, 0.78f, 1f);
+            splashMadeWithTxt.raycastTarget = false;
+
+            GameObject splashUnityTitleObj = CreateUIObject("UnityTitleLabel", splashUnityGroupObj.transform);
+            RectTransform splashUnityTitleRect = splashUnityTitleObj.GetComponent<RectTransform>();
+            splashUnityTitleRect.anchoredPosition = new Vector2(0f, -85f);
+            splashUnityTitleRect.sizeDelta = new Vector2(500f, 60f);
+            Text splashUnityTitleTxt = splashUnityTitleObj.AddComponent<Text>();
+            splashUnityTitleTxt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            splashUnityTitleTxt.text = "U N I T Y";
+            splashUnityTitleTxt.fontSize = 42;
+            splashUnityTitleTxt.fontStyle = FontStyle.Bold;
+            splashUnityTitleTxt.alignment = TextAnchor.MiddleCenter;
+            splashUnityTitleTxt.color = Color.white;
+            splashUnityTitleTxt.raycastTarget = false;
+
+            // Phase 2: Beyond Game Studios Black Logo on Crisp White Backdrop
+            GameObject splashStudioGroupObj = CreateUIObject("SplashStudioLogoGroup", splashRootObj.transform);
+            RectTransform splashStudioRect = splashStudioGroupObj.GetComponent<RectTransform>();
+            splashStudioRect.anchoredPosition = Vector2.zero;
+            splashStudioRect.sizeDelta = new Vector2(1920f, 1080f);
+            CanvasGroup splashStudioCg = splashStudioGroupObj.AddComponent<CanvasGroup>();
+            splashStudioCg.alpha = 0f;
+
+            RawImage splashStudioWhiteBg = splashStudioGroupObj.AddComponent<RawImage>();
+            splashStudioWhiteBg.color = Color.white;
+            splashStudioWhiteBg.raycastTarget = false;
+
+            GameObject splashStudioLogoArtObj = CreateUIObject("StudioBlackLogoArt", splashStudioGroupObj.transform);
+            RectTransform splashStudioLogoArtRect = splashStudioLogoArtObj.GetComponent<RectTransform>();
+            splashStudioLogoArtRect.anchoredPosition = Vector2.zero;
+            splashStudioLogoArtRect.sizeDelta = new Vector2(680f, 680f);
+            RawImage splashStudioImg = splashStudioLogoArtObj.AddComponent<RawImage>();
+            Texture2D studioBlackTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/_Project/Art/UI/UI_Logo_BeyondGameStudios_Black.png");
+            if (studioBlackTex == null)
+            {
+                studioBlackTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/_Project/Art/UI/UI_Logo_BeyondGameStudios.png");
+            }
+            splashStudioImg.texture = studioBlackTex;
+            splashStudioImg.color = Color.white;
+            splashStudioImg.raycastTarget = false;
+
+            // =========================================================================
+            // EMBEDDED INTRO CINEMATIC OVERLAY (1:33 Narrative Sequence inside 01_MainMenu)
+            // Guarantees clicking NEW GAME plays the 10-slide Intro Cinematic immediately!
+            // =========================================================================
+            GameObject introAudioRoot = new GameObject("EmbeddedIntroCinematicAudio");
+            GameObject introBgmObj = new GameObject("AudioSource_BGM_WeightOfTheSeal");
+            introBgmObj.transform.SetParent(introAudioRoot.transform, false);
+            AudioSource introBgmSource = introBgmObj.AddComponent<AudioSource>();
+            introBgmSource.playOnAwake = false;
+            introBgmSource.loop = false;
+            introBgmSource.spatialBlend = 0f;
+            introBgmSource.volume = 0.78f;
+
+            GameObject introVoObj = new GameObject("AudioSource_VO_LocalizedNarrator");
+            introVoObj.transform.SetParent(introAudioRoot.transform, false);
+            AudioSource introVoSource = introVoObj.AddComponent<AudioSource>();
+            introVoSource.playOnAwake = false;
+            introVoSource.loop = false;
+            introVoSource.spatialBlend = 0f;
+            introVoSource.volume = 1.0f;
+
+            GameObject embeddedIntroRoot = CreateUIObject("EmbeddedIntroCinematicRoot", canvasObj.transform);
+            StretchFullScreen(embeddedIntroRoot.GetComponent<RectTransform>());
+            CanvasGroup embeddedIntroRootCg = embeddedIntroRoot.AddComponent<CanvasGroup>();
+            embeddedIntroRootCg.alpha = 0f;
+            embeddedIntroRootCg.interactable = false;
+            embeddedIntroRootCg.blocksRaycasts = false;
+
+            GameObject embBgObj = CreateUIObject("BlackBackdrop", embeddedIntroRoot.transform);
+            RectTransform embBgRect = embBgObj.GetComponent<RectTransform>();
+            embBgRect.anchoredPosition = Vector2.zero;
+            embBgRect.sizeDelta = new Vector2(1920f, 1080f);
+            RawImage embBgImg = embBgObj.AddComponent<RawImage>();
+            embBgImg.color = Color.black;
+
+            GameObject embSlideObj = CreateUIObject("CinematicSlideImage", embeddedIntroRoot.transform);
+            RectTransform embSlideRect = embSlideObj.GetComponent<RectTransform>();
+            embSlideRect.anchoredPosition = Vector2.zero;
+            embSlideRect.sizeDelta = new Vector2(1920f, 1080f);
+            CanvasGroup embSlideCg = embSlideObj.AddComponent<CanvasGroup>();
+            embSlideCg.alpha = 1f;
+            RawImage embSlideImg = embSlideObj.AddComponent<RawImage>();
+            embSlideImg.texture = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/_Project/Art/UI/IntroCinematic/UI_IntroSlide_01.png");
+            embSlideImg.color = Color.white;
+
+            GameObject embSubGroupObj = CreateUIObject("SubtitleBarGroup", embeddedIntroRoot.transform);
+            RectTransform embSubGroupRect = embSubGroupObj.GetComponent<RectTransform>();
+            embSubGroupRect.anchoredPosition = new Vector2(0f, -415f);
+            embSubGroupRect.sizeDelta = new Vector2(1460f, 110f);
+            CanvasGroup embSubCg = embSubGroupObj.AddComponent<CanvasGroup>();
+            embSubCg.alpha = 1f;
+
+            Image embSubBannerImg = embSubGroupObj.AddComponent<Image>();
+            embSubBannerImg.sprite = uiDarkBannerSprite;
+            embSubBannerImg.color = new Color(0.01f, 0.012f, 0.016f, 0.82f);
+            embSubBannerImg.raycastTarget = false;
+
+            CreateOrnamentalRuleLine("SubtitleTopGoldRule", embSubGroupObj.transform, new Vector2(0f, 52f), new Vector2(980f, 1.5f));
+            CreateOrnamentalRuleLine("SubtitleBottomGoldRule", embSubGroupObj.transform, new Vector2(0f, -52f), new Vector2(980f, 1.5f));
+
+            GameObject embSubTextObj = CreateUIObject("SubtitleText", embSubGroupObj.transform);
+            RectTransform embSubTextRect = embSubTextObj.GetComponent<RectTransform>();
+            embSubTextRect.anchoredPosition = Vector2.zero;
+            embSubTextRect.sizeDelta = new Vector2(1320f, 94f);
+            Text embSubTxt = embSubTextObj.AddComponent<Text>();
+            embSubTxt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            embSubTxt.text = "In the beginning... there was no weight. Only... the flow.";
+            embSubTxt.fontSize = 26;
+            embSubTxt.fontStyle = FontStyle.Italic;
+            embSubTxt.alignment = TextAnchor.MiddleCenter;
+            embSubTxt.color = new Color(0.93f, 0.90f, 0.83f, 1.0f);
+            embSubTxt.raycastTarget = false;
+
+            GameObject embSkipObj = CreateUIObject("SkipPromptGroup", embeddedIntroRoot.transform);
+            RectTransform embSkipRect = embSkipObj.GetComponent<RectTransform>();
+            embSkipRect.anchoredPosition = new Vector2(680f, -495f);
+            embSkipRect.sizeDelta = new Vector2(440f, 36f);
+            CanvasGroup embSkipCg = embSkipObj.AddComponent<CanvasGroup>();
+            embSkipCg.alpha = 0f;
+            Text embSkipTxt = embSkipObj.AddComponent<Text>();
+            embSkipTxt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            embSkipTxt.text = "HOLD [SPACE / ESC] TO SKIP";
+            embSkipTxt.fontSize = 16;
+            embSkipTxt.alignment = TextAnchor.MiddleRight;
+            embSkipTxt.color = new Color(0.75f, 0.72f, 0.66f, 0.85f);
+            embSkipTxt.raycastTarget = false;
+
+            GameObject embFinalBlackObj = CreateUIObject("FinalBlackFadeGroup", embeddedIntroRoot.transform);
+            RectTransform embFinalBlackRect = embFinalBlackObj.GetComponent<RectTransform>();
+            embFinalBlackRect.anchoredPosition = Vector2.zero;
+            embFinalBlackRect.sizeDelta = new Vector2(1920f, 1080f);
+            CanvasGroup embFinalBlackCg = embFinalBlackObj.AddComponent<CanvasGroup>();
+            embFinalBlackCg.alpha = 0f;
+            embFinalBlackCg.blocksRaycasts = false;
+            RawImage embFinalBlackImg = embFinalBlackObj.AddComponent<RawImage>();
+            embFinalBlackImg.color = Color.black;
+            embFinalBlackImg.raycastTarget = false;
+
+            IntroCinematicController embIntroCtrl = embeddedIntroRoot.AddComponent<IntroCinematicController>();
+            SerializedObject embIntroSo = new SerializedObject(embIntroCtrl);
+            embIntroSo.FindProperty("_playOnStart").boolValue = false;
+            embIntroSo.FindProperty("_rootCanvasGroup").objectReferenceValue = embeddedIntroRootCg;
+            embIntroSo.FindProperty("_cinematicData").objectReferenceValue = introData;
+            embIntroSo.FindProperty("_nextGameplaySceneName").stringValue = "SampleScene";
+            embIntroSo.FindProperty("_slideRawImage").objectReferenceValue = embSlideImg;
+            embIntroSo.FindProperty("_slideRect").objectReferenceValue = embSlideRect;
+            embIntroSo.FindProperty("_slideCanvasGroup").objectReferenceValue = embSlideCg;
+            embIntroSo.FindProperty("_subtitleGroup").objectReferenceValue = embSubCg;
+            embIntroSo.FindProperty("_subtitleText").objectReferenceValue = embSubTxt;
+            embIntroSo.FindProperty("_skipPromptGroup").objectReferenceValue = embSkipCg;
+            embIntroSo.FindProperty("_skipPromptText").objectReferenceValue = embSkipTxt;
+            embIntroSo.FindProperty("_finalBlackFadeGroup").objectReferenceValue = embFinalBlackCg;
+            embIntroSo.FindProperty("_bgmAudioSource").objectReferenceValue = introBgmSource;
+            embIntroSo.FindProperty("_vocalsAudioSource").objectReferenceValue = introVoSource;
+            embIntroSo.ApplyModifiedPropertiesWithoutUndo();
 
             // Attach & Wire MainMenuController
             MainMenuController menuCtrl = canvasObj.AddComponent<MainMenuController>();
             SerializedObject so = new SerializedObject(menuCtrl);
+            so.FindProperty("_splashRootGroup").objectReferenceValue = splashRootCg;
+            so.FindProperty("_splashUnityGroup").objectReferenceValue = splashUnityCg;
+            so.FindProperty("_splashUnityRect").objectReferenceValue = splashUnityRect;
+            so.FindProperty("_splashStudioGroup").objectReferenceValue = splashStudioCg;
+            so.FindProperty("_splashStudioRect").objectReferenceValue = splashStudioRect;
             so.FindProperty("_screenBlackFadeGroup").objectReferenceValue = blackFadeCg;
             so.FindProperty("_titleLogoGroup").objectReferenceValue = titleCg;
             so.FindProperty("_pressAnyButtonGroup").objectReferenceValue = pressAnyCg;
             so.FindProperty("_menuButtonsGroup").objectReferenceValue = menuButtonsCg;
             so.FindProperty("_settingsPanelGroup").objectReferenceValue = settingsCg;
+            so.FindProperty("_mainCanvas").objectReferenceValue = canvasObj.GetComponent<Canvas>();
+            so.FindProperty("_uiCamera").objectReferenceValue = cam;
             so.FindProperty("_continueButton").objectReferenceValue = buttons[0];
             so.FindProperty("_newGameButton").objectReferenceValue = buttons[1];
             so.FindProperty("_settingsButton").objectReferenceValue = buttons[2];
             so.FindProperty("_exitButton").objectReferenceValue = buttons[3];
             so.FindProperty("_pressAnyButtonLabel").objectReferenceValue = pressAnyTxt;
             so.FindProperty("_languageToggleButton").objectReferenceValue = langBtn;
+            so.FindProperty("_languageButtonRect").objectReferenceValue = langBtnRect;
             so.FindProperty("_languageButtonLabel").objectReferenceValue = langLbl;
+            so.FindProperty("_closeSettingsButton").objectReferenceValue = backBtn;
+            so.FindProperty("_closeSettingsRect").objectReferenceValue = backBtnRect;
             so.FindProperty("_settingsHeaderLabel").objectReferenceValue = settingsHeaderTxt;
             so.FindProperty("_backButtonLabel").objectReferenceValue = backLbl;
             so.FindProperty("_bgmAudioSource").objectReferenceValue = bgmSource;
             so.FindProperty("_targetBgmVolume").floatValue = 0.80f;
+            so.FindProperty("_embeddedIntroCinematic").objectReferenceValue = embIntroCtrl;
 
             SerializedProperty labelsProp = so.FindProperty("_buttonLabels");
             labelsProp.arraySize = 4;
+            SerializedProperty rectsProp = so.FindProperty("_buttonRects");
+            rectsProp.arraySize = 4;
             for (int i = 0; i < 4; i++)
             {
                 labelsProp.GetArrayElementAtIndex(i).objectReferenceValue = btnLabels[i];
+                rectsProp.GetArrayElementAtIndex(i).objectReferenceValue = btnRects[i];
             }
             so.FindProperty("_introCinematicSceneName").stringValue = "02_IntroCinematic";
             so.FindProperty("_gameplaySceneName").stringValue = "SampleScene";
@@ -1123,7 +1355,7 @@ namespace CaveSouls.Core.Editor
             CanvasGroup finalBlackCg = finalBlackObj.AddComponent<CanvasGroup>();
             finalBlackCg.alpha = 0f;
             finalBlackCg.blocksRaycasts = false;
-            Image finalBlackImg = finalBlackObj.AddComponent<Image>();
+            RawImage finalBlackImg = finalBlackObj.AddComponent<RawImage>();
             finalBlackImg.color = Color.black;
             finalBlackImg.raycastTarget = false;
 
@@ -1132,6 +1364,7 @@ namespace CaveSouls.Core.Editor
             // Attach & Wire IntroCinematicController
             IntroCinematicController ctrl = canvasObj.AddComponent<IntroCinematicController>();
             SerializedObject so = new SerializedObject(ctrl);
+            so.FindProperty("_playOnStart").boolValue = true;
             so.FindProperty("_cinematicData").objectReferenceValue = introData;
             so.FindProperty("_nextGameplaySceneName").stringValue = "SampleScene";
             so.FindProperty("_slideRawImage").objectReferenceValue = slideImg;
@@ -1197,7 +1430,7 @@ namespace CaveSouls.Core.Editor
         {
             GameObject esObj = new GameObject("EventSystem");
             esObj.AddComponent<EventSystem>();
-            esObj.AddComponent<StandaloneInputModule>();
+            esObj.AddComponent<InputSystemUIInputModule>();
         }
 
         private static GameObject CreateUIObject(string name, Transform parent)

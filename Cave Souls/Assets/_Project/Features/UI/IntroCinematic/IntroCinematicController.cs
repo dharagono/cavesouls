@@ -17,8 +17,10 @@ namespace CaveSouls.Features.UI
         [Header("Static Configuration")]
         [SerializeField] private IntroCinematicDataSO _cinematicData;
         [SerializeField] private string _nextGameplaySceneName = "SampleScene";
+        [SerializeField] private bool _playOnStart = true;
 
         [Header("UI References")]
+        [SerializeField] private CanvasGroup _rootCanvasGroup;
         [SerializeField] private RawImage _slideRawImage;
         [SerializeField] private RectTransform _slideRect;
         [SerializeField] private CanvasGroup _slideCanvasGroup;
@@ -32,6 +34,7 @@ namespace CaveSouls.Features.UI
         [SerializeField] private AudioSource _bgmAudioSource;
         [SerializeField] private AudioSource _vocalsAudioSource;
 
+        private bool _isPlaying;
         private float _elapsedTime;
         private int _activeSlideIndex = -1;
         private int _activeSubtitleIndex = -1;
@@ -50,28 +53,61 @@ namespace CaveSouls.Features.UI
             if (_skipPromptGroup != null) _skipPromptGroup.alpha = 0f;
             if (_finalBlackFadeGroup != null) _finalBlackFadeGroup.alpha = 0f;
 
+            if (!_playOnStart && _rootCanvasGroup != null)
+            {
+                _rootCanvasGroup.alpha = 0f;
+                _rootCanvasGroup.interactable = false;
+                _rootCanvasGroup.blocksRaycasts = false;
+            }
+        }
+
+        private void Start()
+        {
+            if (_playOnStart)
+            {
+                PlayCinematic();
+            }
+        }
+
+        public void PlayCinematic()
+        {
+            if (_cinematicData == null) return;
+
+            _isPlaying = true;
+            _elapsedTime = 0f;
+            _activeSlideIndex = -1;
+            _activeSubtitleIndex = -1;
+            _skipHoldTimer = 0f;
+            _isTransitioningOut = false;
+            _outroFadeTimer = 0f;
+            _asyncLoadTriggered = false;
+
+            if (_rootCanvasGroup != null)
+            {
+                _rootCanvasGroup.alpha = 1f;
+                _rootCanvasGroup.interactable = true;
+                _rootCanvasGroup.blocksRaycasts = true;
+            }
+
             if (_skipPromptText != null)
             {
                 _skipPromptText.text = GameLocalizationService.Select(
                     "HOLD [SPACE / ESC] TO SKIP",
                     "MANTÉN [ESPACIO / ESC] PARA OMITIR");
             }
-        }
-
-        private void Start()
-        {
-            if (_cinematicData == null) return;
 
             if (_bgmAudioSource != null && _cinematicData.BgmClip != null)
             {
+                _bgmAudioSource.Stop();
                 _bgmAudioSource.clip = _cinematicData.BgmClip;
                 _bgmAudioSource.loop = false;
-                _bgmAudioSource.volume = 0.78f;
+                _bgmAudioSource.volume = 0.80f;
                 _bgmAudioSource.Play();
             }
 
             if (_vocalsAudioSource != null)
             {
+                _vocalsAudioSource.Stop();
                 AudioClip voClip = (GameLocalizationService.CurrentLanguage == GameLanguage.Spanish)
                     ? _cinematicData.VocalsSpanishClip
                     : _cinematicData.VocalsEnglishClip;
@@ -85,13 +121,13 @@ namespace CaveSouls.Features.UI
                 }
             }
 
-            UpdateSlideState(0f);
-            UpdateSubtitleState(0f);
+            UpdateSlideState(0.05f);
+            UpdateSubtitleState(0.05f);
         }
 
         private void Update()
         {
-            if (_cinematicData == null) return;
+            if (!_isPlaying || _cinematicData == null) return;
 
             float dt = Time.unscaledDeltaTime;
 
@@ -100,7 +136,7 @@ namespace CaveSouls.Features.UI
                 _outroFadeTimer += dt;
                 float tOut = Mathf.Clamp01(_outroFadeTimer / 1.5f);
                 if (_finalBlackFadeGroup != null) _finalBlackFadeGroup.alpha = tOut;
-                if (_bgmAudioSource != null) _bgmAudioSource.volume = Mathf.Lerp(0.78f, 0f, tOut);
+                if (_bgmAudioSource != null) _bgmAudioSource.volume = Mathf.Lerp(0.80f, 0f, tOut);
                 if (_vocalsAudioSource != null) _vocalsAudioSource.volume = Mathf.Lerp(1.0f, 0f, tOut);
 
                 if (_outroFadeTimer >= 1.55f && !_asyncLoadTriggered)
@@ -111,22 +147,8 @@ namespace CaveSouls.Features.UI
                 return;
             }
 
-            if (_bgmAudioSource != null && _bgmAudioSource.isPlaying)
-            {
-                float audioClock = _bgmAudioSource.time;
-                if (audioClock > _elapsedTime || Mathf.Abs(audioClock - _elapsedTime) > 0.25f)
-                {
-                    _elapsedTime = audioClock;
-                }
-                else
-                {
-                    _elapsedTime += dt;
-                }
-            }
-            else
-            {
-                _elapsedTime += dt;
-            }
+            // Advance timeline strictly via unscaledDeltaTime so muted Editor Game View or MP3 buffer never stalls the slides
+            _elapsedTime += dt;
 
             UpdateSlideState(_elapsedTime);
             UpdateSubtitleState(_elapsedTime);
