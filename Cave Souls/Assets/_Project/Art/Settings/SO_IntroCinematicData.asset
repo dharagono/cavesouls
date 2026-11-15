@@ -104,8 +104,8 @@ MonoBehaviour:
     TextSpanish: Nos volvimos densos.
   - StartTime: 50.2
     EndTime: 56.4
-    TextEnglish: Fusing together... solidifying our essence into prisons of crystal... mud... and stone.
-    TextSpanish: "Fusion\xE1ndonos... solidificando nuestra esencia en prisiones de cristal... lodo... y piedra."
+    TextEnglish: solidifying our essence into prisons of crystal... mud... and stone.
+    TextSpanish: solidificando nuestra esencia en prisiones de cristal... lodo... y piedra.
   - StartTime: 57.3
     EndTime: 59.3
     TextEnglish: And yet...

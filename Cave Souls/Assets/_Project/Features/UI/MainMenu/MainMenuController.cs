@@ -71,15 +71,21 @@ namespace CaveSouls.Features.UI
         [SerializeField] private AudioSource _bgmAudioSource;
         [SerializeField] private float _targetBgmVolume = 0.80f;
 
+        [Header("Audio (UI SFX)")]
+        [SerializeField] private AudioSource _sfxAudioSource;
+        [SerializeField] private AudioClip _hoverClip;
+        [SerializeField] private AudioClip _confirmClip;
+
         [Header("Intro Cinematic & Scene Navigation")]
         [SerializeField] private IntroCinematicController _embeddedIntroCinematic;
         [SerializeField] private string _introCinematicSceneName = "02_IntroCinematic";
-        [SerializeField] private string _gameplaySceneName = "SampleScene";
+        [SerializeField] private string _gameplaySceneName = "01_MainMenu";
         [SerializeField] private string _saveFileName = "cavesouls_save01.dat";
 
         private MenuState _state;
         private float _stateTimer;
         private int _selectedIndex;
+        private int _settingsHoverIndex = -1;
         private bool _hasSaveFile;
         private bool _isStartingNewGame;
         private bool _asyncLoadTriggered;
@@ -156,6 +162,22 @@ namespace CaveSouls.Features.UI
 
             RefreshLocalizedTexts();
             RefreshButtonVisuals();
+        }
+
+        public void PlayHoverSound()
+        {
+            if (_sfxAudioSource != null && _hoverClip != null)
+            {
+                _sfxAudioSource.PlayOneShot(_hoverClip, 0.95f);
+            }
+        }
+
+        public void PlayConfirmSound()
+        {
+            if (_sfxAudioSource != null && _confirmClip != null)
+            {
+                _sfxAudioSource.PlayOneShot(_confirmClip, 1.0f);
+            }
         }
 
         private void StartMainMenuBgm()
@@ -271,6 +293,7 @@ namespace CaveSouls.Features.UI
 
                     if (WasAnyInputPressedThisFrame())
                     {
+                        PlayConfirmSound();
                         SetGroup(_pressAnyButtonGroup, 0f, false);
                         SetGroup(_menuButtonsGroup, 1f, true);
                         ChangeState(MenuState.MainButtonsActive);
@@ -287,13 +310,16 @@ namespace CaveSouls.Features.UI
                     break;
 
                 case MenuState.TransitioningToGame:
-                    float blackAlpha = Mathf.Clamp01(_stateTimer / 1.0f);
+                    float t = Mathf.Clamp01(_stateTimer / 2.0f);
+                    float blackAlpha = Mathf.SmoothStep(0f, 1f, t);
                     SetGroup(_screenBlackFadeGroup, blackAlpha, true);
+                    SetGroup(_titleLogoGroup, 1f - blackAlpha, false);
+                    SetGroup(_menuButtonsGroup, 1f - blackAlpha, false);
                     if (_bgmAudioSource != null)
                     {
                         _bgmAudioSource.volume = Mathf.Lerp(_targetBgmVolume, 0f, blackAlpha);
                     }
-                    if (_stateTimer >= 1.05f && !_asyncLoadTriggered)
+                    if (_stateTimer >= 2.0f && !_asyncLoadTriggered)
                     {
                         _asyncLoadTriggered = true;
                         if (_bgmAudioSource != null) _bgmAudioSource.Stop();
@@ -319,34 +345,33 @@ namespace CaveSouls.Features.UI
         public void OnContinueClicked()
         {
             if (!_hasSaveFile || _state == MenuState.TransitioningToGame || _state == MenuState.PlayingIntroCinematic) return;
+            PlayConfirmSound();
             _isStartingNewGame = false;
+            if (_menuButtonsGroup != null)
+            {
+                _menuButtonsGroup.interactable = false;
+                _menuButtonsGroup.blocksRaycasts = false;
+            }
             ChangeState(MenuState.TransitioningToGame);
         }
 
         public void OnNewGameClicked()
         {
             if (_state == MenuState.TransitioningToGame || _state == MenuState.PlayingIntroCinematic) return;
+            PlayConfirmSound();
             _isStartingNewGame = true;
-
-            if (_embeddedIntroCinematic != null)
+            if (_menuButtonsGroup != null)
             {
-                if (_bgmAudioSource != null) _bgmAudioSource.Stop();
-                SetGroup(_titleLogoGroup, 0f, false);
-                SetGroup(_pressAnyButtonGroup, 0f, false);
-                SetGroup(_menuButtonsGroup, 0f, false);
-                SetGroup(_settingsPanelGroup, 0f, false);
-                SetGroup(_screenBlackFadeGroup, 1f, false);
-                ChangeState(MenuState.PlayingIntroCinematic);
-                _embeddedIntroCinematic.PlayCinematic();
-                return;
+                _menuButtonsGroup.interactable = false;
+                _menuButtonsGroup.blocksRaycasts = false;
             }
-
             ChangeState(MenuState.TransitioningToGame);
         }
 
         public void OnSettingsClicked()
         {
             if (_state != MenuState.MainButtonsActive) return;
+            PlayConfirmSound();
             SetGroup(_menuButtonsGroup, 0f, false);
             SetGroup(_settingsPanelGroup, 1f, true);
             ChangeState(MenuState.SettingsPanelActive);
@@ -355,12 +380,14 @@ namespace CaveSouls.Features.UI
 
         public void OnToggleLanguageClicked()
         {
+            PlayConfirmSound();
             GameLocalizationService.ToggleLanguage();
             RefreshLocalizedTexts();
         }
 
         public void OnCloseSettingsClicked()
         {
+            PlayConfirmSound();
             SetGroup(_settingsPanelGroup, 0f, false);
             SetGroup(_menuButtonsGroup, 1f, true);
             ChangeState(MenuState.MainButtonsActive);
@@ -368,6 +395,7 @@ namespace CaveSouls.Features.UI
 
         public void OnExitClicked()
         {
+            PlayConfirmSound();
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
 #else
@@ -377,21 +405,44 @@ namespace CaveSouls.Features.UI
 
         private void HandleSettingsPanelInput()
         {
-            // Direct Mouse Click Hit-Testing on Settings Panel Buttons (Zero-GC)
-            if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame && _stateTimer > 0.1f)
+            // Direct Mouse Hover & Click Detection on Settings Panel Buttons (Zero-GC)
+            if (Mouse.current != null)
             {
                 Vector2 mousePos = Mouse.current.position.ReadValue();
+                int currentHover = -1;
                 if (_languageButtonRect != null &&
                     RectTransformUtility.RectangleContainsScreenPoint(_languageButtonRect, mousePos, _uiCamera))
                 {
-                    OnToggleLanguageClicked();
-                    return;
+                    currentHover = 0;
                 }
-                if (_closeSettingsRect != null &&
+                else if (_closeSettingsRect != null &&
                     RectTransformUtility.RectangleContainsScreenPoint(_closeSettingsRect, mousePos, _uiCamera))
                 {
-                    OnCloseSettingsClicked();
-                    return;
+                    currentHover = 1;
+                }
+
+                if (currentHover != -1 && currentHover != _settingsHoverIndex)
+                {
+                    _settingsHoverIndex = currentHover;
+                    PlayHoverSound();
+                }
+                else if (currentHover == -1)
+                {
+                    _settingsHoverIndex = -1;
+                }
+
+                if (Mouse.current.leftButton.wasPressedThisFrame && _stateTimer > 0.1f)
+                {
+                    if (currentHover == 0)
+                    {
+                        OnToggleLanguageClicked();
+                        return;
+                    }
+                    if (currentHover == 1)
+                    {
+                        OnCloseSettingsClicked();
+                        return;
+                    }
                 }
             }
 
@@ -448,6 +499,7 @@ namespace CaveSouls.Features.UI
                         {
                             _selectedIndex = i;
                             RefreshButtonVisuals();
+                            PlayHoverSound();
                         }
 
                         if (Mouse.current.leftButton.wasPressedThisFrame && _stateTimer > 0.1f)
@@ -482,9 +534,14 @@ namespace CaveSouls.Features.UI
                 _navCooldownTimer = 0.18f;
                 int minIdx = _hasSaveFile ? 0 : 1;
                 int maxIdx = 3;
+                int prev = _selectedIndex;
                 _selectedIndex += moveDir;
                 if (_selectedIndex > maxIdx) _selectedIndex = minIdx;
                 if (_selectedIndex < minIdx) _selectedIndex = maxIdx;
+                if (_selectedIndex != prev)
+                {
+                    PlayHoverSound();
+                }
                 RefreshButtonVisuals();
             }
 
@@ -597,8 +654,10 @@ namespace CaveSouls.Features.UI
             if (_isStartingNewGame && _embeddedIntroCinematic != null)
             {
                 SetGroup(_titleLogoGroup, 0f, false);
+                SetGroup(_pressAnyButtonGroup, 0f, false);
                 SetGroup(_menuButtonsGroup, 0f, false);
                 SetGroup(_settingsPanelGroup, 0f, false);
+                SetGroup(_screenBlackFadeGroup, 0f, false);
                 ChangeState(MenuState.PlayingIntroCinematic);
                 _embeddedIntroCinematic.PlayCinematic();
                 return;

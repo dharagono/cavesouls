@@ -721,6 +721,16 @@ namespace CaveSouls.Core.Editor
             bgmSource.volume = 0.80f;
             bgmSource.priority = 0;
 
+            // 8b. UI Sound Effects (Hover & Confirm SFX)
+            AudioClip hoverClip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/_Project/Art/Audio/UI/SFX_Menu_Hover.wav");
+            AudioClip confirmClip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/_Project/Art/Audio/UI/SFX_Menu_Confirm.wav");
+            GameObject sfxObj = new GameObject("SFX_MenuAudio");
+            AudioSource sfxSource = sfxObj.AddComponent<AudioSource>();
+            sfxSource.playOnAwake = false;
+            sfxSource.loop = false;
+            sfxSource.spatialBlend = 0f;
+            sfxSource.volume = 1.0f;
+
             // 9. UI Canvas & CAVE SOULS Title + FromSoftware Ornamental Menu
             CreateEventSystem();
             GameObject canvasObj = CreateStandardCanvas("MainMenuCanvas", cam);
@@ -1072,7 +1082,7 @@ namespace CaveSouls.Core.Editor
             embIntroSo.FindProperty("_playOnStart").boolValue = false;
             embIntroSo.FindProperty("_rootCanvasGroup").objectReferenceValue = embeddedIntroRootCg;
             WireIntroCinematicAssetReferences(embIntroSo);
-            embIntroSo.FindProperty("_nextGameplaySceneName").stringValue = "SampleScene";
+            embIntroSo.FindProperty("_nextGameplaySceneName").stringValue = "01_MainMenu";
             embIntroSo.FindProperty("_slideRawImage").objectReferenceValue = embSlideImg;
             embIntroSo.FindProperty("_slideRect").objectReferenceValue = embSlideRect;
             embIntroSo.FindProperty("_slideCanvasGroup").objectReferenceValue = embSlideCg;
@@ -1114,6 +1124,9 @@ namespace CaveSouls.Core.Editor
             so.FindProperty("_backButtonLabel").objectReferenceValue = backLbl;
             so.FindProperty("_bgmAudioSource").objectReferenceValue = bgmSource;
             so.FindProperty("_targetBgmVolume").floatValue = 0.80f;
+            so.FindProperty("_sfxAudioSource").objectReferenceValue = sfxSource;
+            so.FindProperty("_hoverClip").objectReferenceValue = hoverClip;
+            so.FindProperty("_confirmClip").objectReferenceValue = confirmClip;
             so.FindProperty("_embeddedIntroCinematic").objectReferenceValue = embIntroCtrl;
 
             SerializedProperty labelsProp = so.FindProperty("_buttonLabels");
@@ -1126,7 +1139,7 @@ namespace CaveSouls.Core.Editor
                 rectsProp.GetArrayElementAtIndex(i).objectReferenceValue = btnRects[i];
             }
             so.FindProperty("_introCinematicSceneName").stringValue = "02_IntroCinematic";
-            so.FindProperty("_gameplaySceneName").stringValue = "SampleScene";
+            so.FindProperty("_gameplaySceneName").stringValue = "01_MainMenu";
             so.ApplyModifiedPropertiesWithoutUndo();
 
             UnityEditor.Events.UnityEventTools.AddPersistentListener(backBtn.onClick, menuCtrl.OnCloseSettingsClicked);
@@ -1191,7 +1204,7 @@ namespace CaveSouls.Core.Editor
 
                 // Clip 6 (46.5s - 56.8s)
                 (47.2f, 49.6f, "We grew dense.", "Nos volvimos densos."),
-                (50.2f, 56.4f, "Fusing together... solidifying our essence into prisons of crystal... mud... and stone.", "Fusionándonos... solidificando nuestra esencia en prisiones de cristal... lodo... y piedra."),
+                (50.2f, 56.4f, "solidifying our essence into prisons of crystal... mud... and stone.", "solidificando nuestra esencia en prisiones de cristal... lodo... y piedra."),
 
                 // Clip 7 (56.8s - 66.6s)
                 (57.3f, 59.3f, "And yet...", "Y sin embargo..."),
@@ -1390,7 +1403,7 @@ namespace CaveSouls.Core.Editor
             SerializedObject so = new SerializedObject(ctrl);
             so.FindProperty("_playOnStart").boolValue = true;
             WireIntroCinematicAssetReferences(so);
-            so.FindProperty("_nextGameplaySceneName").stringValue = "SampleScene";
+            so.FindProperty("_nextGameplaySceneName").stringValue = "01_MainMenu";
             so.FindProperty("_slideRawImage").objectReferenceValue = slideImg;
             so.FindProperty("_slideRect").objectReferenceValue = slideRect;
             so.FindProperty("_slideCanvasGroup").objectReferenceValue = slideCg;

@@ -17,7 +17,7 @@ namespace CaveSouls.Features.UI
     {
         [Header("Static Configuration")]
         [SerializeField] private IntroCinematicDataSO _cinematicData;
-        [SerializeField] private string _nextGameplaySceneName = "SampleScene";
+        [SerializeField] private string _nextGameplaySceneName = "01_MainMenu";
         [SerializeField] private bool _playOnStart = true;
 
         [Header("Direct Scene Asset References (Fail-Safe)")]
@@ -80,7 +80,7 @@ namespace CaveSouls.Features.UI
             new IntroSubtitleCue { StartTime = 42.6f, EndTime = 46.1f, TextEnglish = "...we were stripped of birth.", TextSpanish = "...fuimos despojados del nacimiento." },
             // Clip 6 (46.5s - 56.8s)
             new IntroSubtitleCue { StartTime = 47.2f, EndTime = 49.6f, TextEnglish = "We grew dense.", TextSpanish = "Nos volvimos densos." },
-            new IntroSubtitleCue { StartTime = 50.2f, EndTime = 56.4f, TextEnglish = "Fusing together... solidifying our essence into prisons of crystal... mud... and stone.", TextSpanish = "Fusionándonos... solidificando nuestra esencia en prisiones de cristal... lodo... y piedra." },
+            new IntroSubtitleCue { StartTime = 50.2f, EndTime = 56.4f, TextEnglish = "solidifying our essence into prisons of crystal... mud... and stone.", TextSpanish = "solidificando nuestra esencia en prisiones de cristal... lodo... y piedra." },
             // Clip 7 (56.8s - 66.6s)
             new IntroSubtitleCue { StartTime = 57.3f, EndTime = 59.3f, TextEnglish = "And yet...", TextSpanish = "Y sin embargo..." },
             new IntroSubtitleCue { StartTime = 59.7f, EndTime = 62.7f, TextEnglish = "in the lowest stratum...", TextSpanish = "en el estrato más profundo..." },
@@ -405,13 +405,14 @@ namespace CaveSouls.Features.UI
 
         private void LoadGameplayScene()
         {
-            if (Application.CanStreamedLevelBeLoaded(_nextGameplaySceneName))
+            string target = !string.IsNullOrEmpty(_nextGameplaySceneName) ? _nextGameplaySceneName : "01_MainMenu";
+            if (Application.CanStreamedLevelBeLoaded(target))
             {
-                SceneManager.LoadSceneAsync(_nextGameplaySceneName);
+                SceneManager.LoadSceneAsync(target);
             }
-            else if (SceneManager.sceneCountInBuildSettings > 3)
+            else
             {
-                SceneManager.LoadSceneAsync(3);
+                SceneManager.LoadSceneAsync(1); // 01_MainMenu index
             }
         }
     }
