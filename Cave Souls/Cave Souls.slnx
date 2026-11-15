@@ -1,0 +1,15 @@
+﻿<Solution>
+  <Project Path="CaveSouls.Player.csproj" />
+  <Project Path="CaveSouls.UI.csproj" />
+  <Project Path="CaveSouls.InventoryAndEquipment.csproj" />
+  <Project Path="CaveSouls.Combat.csproj" />
+  <Project Path="CaveSouls.VFXAndFeedback.csproj" />
+  <Project Path="CaveSouls.Core.csproj" />
+  <Project Path="CaveSouls.AI.csproj" />
+  <Project Path="CaveSouls.SaveSystem.csproj" />
+  <Project Path="CaveSouls.WorldAndProgression.csproj" />
+  <Project Path="CaveSouls.Audio.csproj" />
+  <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="CaveSouls.Core.Editor.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
+</Solution>

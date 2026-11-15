@@ -1,0 +1,19 @@
+{
+    "name": "CaveSouls.UI",
+    "rootNamespace": "CaveSouls.Features.UI",
+    "references": [
+        "CaveSouls.Core",
+        "CaveSouls.Combat",
+        "CaveSouls.Player",
+        "CaveSouls.InventoryAndEquipment"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

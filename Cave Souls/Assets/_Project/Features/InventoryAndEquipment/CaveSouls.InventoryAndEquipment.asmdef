@@ -1,0 +1,17 @@
+{
+    "name": "CaveSouls.InventoryAndEquipment",
+    "rootNamespace": "CaveSouls.Features.InventoryAndEquipment",
+    "references": [
+        "CaveSouls.Core",
+        "CaveSouls.Combat"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

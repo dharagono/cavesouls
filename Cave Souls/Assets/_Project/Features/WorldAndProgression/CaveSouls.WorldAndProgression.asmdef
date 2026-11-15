@@ -1,0 +1,19 @@
+{
+    "name": "CaveSouls.WorldAndProgression",
+    "rootNamespace": "CaveSouls.Features.WorldAndProgression",
+    "references": [
+        "CaveSouls.Core",
+        "CaveSouls.Combat",
+        "CaveSouls.Player",
+        "CaveSouls.InventoryAndEquipment"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

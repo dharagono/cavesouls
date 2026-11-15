@@ -1,0 +1,19 @@
+{
+    "name": "CaveSouls.SaveSystem",
+    "rootNamespace": "CaveSouls.Features.SaveSystem",
+    "references": [
+        "CaveSouls.Core",
+        "CaveSouls.InventoryAndEquipment",
+        "CaveSouls.WorldAndProgression",
+        "CaveSouls.Player"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

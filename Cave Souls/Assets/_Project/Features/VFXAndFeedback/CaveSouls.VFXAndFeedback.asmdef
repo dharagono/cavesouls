@@ -1,0 +1,19 @@
+{
+    "name": "CaveSouls.VFXAndFeedback",
+    "rootNamespace": "CaveSouls.Features.VFXAndFeedback",
+    "references": [
+        "CaveSouls.Core",
+        "CaveSouls.Combat",
+        "Unity.Cinemachine",
+        "Unity.RenderPipelines.Universal.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
