@@ -15,7 +15,7 @@ EditorBuildSettings:
     path: Assets/_Project/Scenes/02_IntroCinematic.unity
     guid: 552c9ec1b50e028478bea1273a1339c6
   - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
-    guid: 99c9720ab356a0642a771bea13969a05
+    path: Assets/_Project/Scenes/03_PrimordialMudBed.unity
+    guid: 8589a9b9c0b8b44439cf487f22ca42ff
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

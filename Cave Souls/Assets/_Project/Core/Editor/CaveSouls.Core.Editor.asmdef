@@ -4,6 +4,9 @@
     "references": [
         "CaveSouls.Core",
         "CaveSouls.UI",
+        "CaveSouls.Player",
+        "CaveSouls.WorldAndProgression",
+        "CaveSouls.Audio",
         "Unity.InputSystem",
         "Unity.RenderPipelines.Core.Runtime",
         "Unity.RenderPipelines.Universal.Runtime"

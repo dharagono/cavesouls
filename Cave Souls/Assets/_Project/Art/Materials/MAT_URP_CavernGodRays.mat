@@ -59,6 +59,7 @@ Material:
     - _DistortionStrengthScaled: 0.1
     - _DstBlend: 1
     - _DstBlendAlpha: 1
+    - _EnableWorldHeightFade: 0
     - _FlipbookBlending: 0
     - _FlipbookMode: 0
     - _FresnelFadePower: 1.45
@@ -76,10 +77,10 @@ Material:
     m_Colors:
     - _BaseColor: {r: 0.68, g: 0.74, b: 0.84, a: 0.055}
     - _BaseColorAddSubDiff: {r: 0, g: 0, b: 0, a: 0}
-    - _BeamColor: {r: 1.25, g: 1.38, b: 1.58, a: 0.32}
+    - _BeamColor: {r: 1.35, g: 1.15, b: 0.75, a: 0.45}
     - _CameraFadeParams: {r: 0, g: Infinity, b: 0, a: 0}
     - _Color: {r: 0.68, g: 0.74, b: 0.8399999, a: 0.055}
-    - _CoreColor: {r: 1.55, g: 1.62, b: 1.75, a: 1}
+    - _CoreColor: {r: 1.85, g: 1.55, b: 0.95, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SoftParticleFadeParams: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []

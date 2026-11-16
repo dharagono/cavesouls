@@ -49,3 +49,8 @@ crashlytics-build.properties
 # Blender backup files (keep .blend master files!)
 *.blend1
 *.blend2
+
+# Screenshots
+[Ss]creenshots/
+Cave Souls/[Aa]ssets/[Ss]creenshots/
+

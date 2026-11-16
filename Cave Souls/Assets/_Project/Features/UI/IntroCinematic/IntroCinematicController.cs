@@ -17,7 +17,7 @@ namespace CaveSouls.Features.UI
     {
         [Header("Static Configuration")]
         [SerializeField] private IntroCinematicDataSO _cinematicData;
-        [SerializeField] private string _nextGameplaySceneName = "01_MainMenu";
+        [SerializeField] private string _nextGameplaySceneName = "03_PrimordialMudBed";
         [SerializeField] private bool _playOnStart = true;
 
         [Header("Direct Scene Asset References (Fail-Safe)")]

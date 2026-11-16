@@ -821,11 +821,11 @@ namespace CaveSouls.Core.Editor
                 btnLabels[i] = lbl;
             }
 
-            // Settings Sub-Panel (with Interactive Language Selector EN / ES)
+            // Settings Sub-Panel (with Interactive Language Selector EN / ES and Stats Toggle)
             GameObject settingsObj = CreateUIObject("SettingsPanelGroup", canvasObj.transform);
             RectTransform settingsRect = settingsObj.GetComponent<RectTransform>();
             settingsRect.anchoredPosition = new Vector2(0f, -260f);
-            settingsRect.sizeDelta = new Vector2(560f, 250f);
+            settingsRect.sizeDelta = new Vector2(560f, 310f);
             CanvasGroup settingsCg = settingsObj.AddComponent<CanvasGroup>();
             settingsCg.alpha = 0f;
             settingsCg.interactable = false;
@@ -833,12 +833,12 @@ namespace CaveSouls.Core.Editor
             Image settingsBg = settingsObj.AddComponent<Image>();
             settingsBg.color = new Color(0.02f, 0.022f, 0.03f, 0.94f);
 
-            CreateOrnamentalRuleLine("SettingsTopRule", settingsObj.transform, new Vector2(0f, 122f), new Vector2(510f, 1.5f));
-            CreateOrnamentalRuleLine("SettingsBottomRule", settingsObj.transform, new Vector2(0f, -122f), new Vector2(510f, 1.5f));
+            CreateOrnamentalRuleLine("SettingsTopRule", settingsObj.transform, new Vector2(0f, 150f), new Vector2(510f, 1.5f));
+            CreateOrnamentalRuleLine("SettingsBottomRule", settingsObj.transform, new Vector2(0f, -150f), new Vector2(510f, 1.5f));
 
             GameObject settingsHeaderObj = CreateUIObject("SettingsHeaderLabel", settingsObj.transform);
             RectTransform settingsHeaderRect = settingsHeaderObj.GetComponent<RectTransform>();
-            settingsHeaderRect.anchoredPosition = new Vector2(0f, 75f);
+            settingsHeaderRect.anchoredPosition = new Vector2(0f, 102f);
             settingsHeaderRect.sizeDelta = new Vector2(500f, 40f);
             Text settingsHeaderTxt = settingsHeaderObj.AddComponent<Text>();
             settingsHeaderTxt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
@@ -851,8 +851,8 @@ namespace CaveSouls.Core.Editor
             // Interactive Language Selector Button (< ENGLISH / ESPAÑOL >)
             GameObject langBtnObj = CreateUIObject("Btn_ToggleLanguage", settingsObj.transform);
             RectTransform langBtnRect = langBtnObj.GetComponent<RectTransform>();
-            langBtnRect.anchoredPosition = new Vector2(0f, 8f);
-            langBtnRect.sizeDelta = new Vector2(480f, 46f);
+            langBtnRect.anchoredPosition = new Vector2(0f, 40f);
+            langBtnRect.sizeDelta = new Vector2(480f, 44f);
             Image langBtnImg = langBtnObj.AddComponent<Image>();
             langBtnImg.color = new Color(0.12f, 0.13f, 0.17f, 0.85f);
             Button langBtn = langBtnObj.AddComponent<Button>();
@@ -868,9 +868,29 @@ namespace CaveSouls.Core.Editor
             langLbl.color = new Color(1.0f, 0.95f, 0.82f, 1f);
             langLbl.raycastTarget = false;
 
+            // Performance Telemetry Overlay Toggle Button (< ON / OFF >)
+            GameObject statsBtnObj = CreateUIObject("Btn_ToggleStats", settingsObj.transform);
+            RectTransform statsBtnRect = statsBtnObj.GetComponent<RectTransform>();
+            statsBtnRect.anchoredPosition = new Vector2(0f, -18f);
+            statsBtnRect.sizeDelta = new Vector2(480f, 44f);
+            Image statsBtnImg = statsBtnObj.AddComponent<Image>();
+            statsBtnImg.color = new Color(0.12f, 0.13f, 0.17f, 0.85f);
+            Button statsBtn = statsBtnObj.AddComponent<Button>();
+            statsBtn.targetGraphic = statsBtnImg;
+
+            GameObject statsLblObj = CreateUIObject("StatsLabel", statsBtnObj.transform);
+            StretchFullScreen(statsLblObj.GetComponent<RectTransform>());
+            Text statsLbl = statsLblObj.AddComponent<Text>();
+            statsLbl.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            statsLbl.text = "P E R F O R M A N C E   S T A T S :     <   O F F   >";
+            statsLbl.fontSize = 18;
+            statsLbl.alignment = TextAnchor.MiddleCenter;
+            statsLbl.color = new Color(1.0f, 0.95f, 0.82f, 1f);
+            statsLbl.raycastTarget = false;
+
             GameObject backBtnObj = CreateUIObject("Btn_CloseSettings", settingsObj.transform);
             RectTransform backBtnRect = backBtnObj.GetComponent<RectTransform>();
-            backBtnRect.anchoredPosition = new Vector2(0f, -68f);
+            backBtnRect.anchoredPosition = new Vector2(0f, -80f);
             backBtnRect.sizeDelta = new Vector2(260f, 40f);
             Image backBtnImg = backBtnObj.AddComponent<Image>();
             backBtnImg.color = new Color(0.15f, 0.15f, 0.18f, 0.8f);
@@ -1082,7 +1102,7 @@ namespace CaveSouls.Core.Editor
             embIntroSo.FindProperty("_playOnStart").boolValue = false;
             embIntroSo.FindProperty("_rootCanvasGroup").objectReferenceValue = embeddedIntroRootCg;
             WireIntroCinematicAssetReferences(embIntroSo);
-            embIntroSo.FindProperty("_nextGameplaySceneName").stringValue = "01_MainMenu";
+            embIntroSo.FindProperty("_nextGameplaySceneName").stringValue = "03_PrimordialMudBed";
             embIntroSo.FindProperty("_slideRawImage").objectReferenceValue = embSlideImg;
             embIntroSo.FindProperty("_slideRect").objectReferenceValue = embSlideRect;
             embIntroSo.FindProperty("_slideCanvasGroup").objectReferenceValue = embSlideCg;
@@ -1118,6 +1138,9 @@ namespace CaveSouls.Core.Editor
             so.FindProperty("_languageToggleButton").objectReferenceValue = langBtn;
             so.FindProperty("_languageButtonRect").objectReferenceValue = langBtnRect;
             so.FindProperty("_languageButtonLabel").objectReferenceValue = langLbl;
+            so.FindProperty("_statsToggleButton").objectReferenceValue = statsBtn;
+            so.FindProperty("_statsButtonRect").objectReferenceValue = statsBtnRect;
+            so.FindProperty("_statsButtonLabel").objectReferenceValue = statsLbl;
             so.FindProperty("_closeSettingsButton").objectReferenceValue = backBtn;
             so.FindProperty("_closeSettingsRect").objectReferenceValue = backBtnRect;
             so.FindProperty("_settingsHeaderLabel").objectReferenceValue = settingsHeaderTxt;
@@ -1139,11 +1162,12 @@ namespace CaveSouls.Core.Editor
                 rectsProp.GetArrayElementAtIndex(i).objectReferenceValue = btnRects[i];
             }
             so.FindProperty("_introCinematicSceneName").stringValue = "02_IntroCinematic";
-            so.FindProperty("_gameplaySceneName").stringValue = "01_MainMenu";
+            so.FindProperty("_gameplaySceneName").stringValue = "03_PrimordialMudBed";
             so.ApplyModifiedPropertiesWithoutUndo();
 
             UnityEditor.Events.UnityEventTools.AddPersistentListener(backBtn.onClick, menuCtrl.OnCloseSettingsClicked);
             UnityEditor.Events.UnityEventTools.AddPersistentListener(langBtn.onClick, menuCtrl.OnToggleLanguageClicked);
+            UnityEditor.Events.UnityEventTools.AddPersistentListener(statsBtn.onClick, menuCtrl.OnTogglePerformanceStatsClicked);
 
             EditorSceneManager.SaveScene(scene, MainMenuScenePath);
         }
@@ -1403,7 +1427,7 @@ namespace CaveSouls.Core.Editor
             SerializedObject so = new SerializedObject(ctrl);
             so.FindProperty("_playOnStart").boolValue = true;
             WireIntroCinematicAssetReferences(so);
-            so.FindProperty("_nextGameplaySceneName").stringValue = "01_MainMenu";
+            so.FindProperty("_nextGameplaySceneName").stringValue = "03_PrimordialMudBed";
             so.FindProperty("_slideRawImage").objectReferenceValue = slideImg;
             so.FindProperty("_slideRect").objectReferenceValue = slideRect;
             so.FindProperty("_slideCanvasGroup").objectReferenceValue = slideCg;

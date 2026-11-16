@@ -4,16 +4,6 @@ using UnityEngine;
 namespace CaveSouls.Features.Audio
 {
     /// <summary>
-    /// Attach to environment colliders or terrain objects to explicitly tag their SurfaceMaterialType
-    /// (Stone, Water, Wood, Dirt, Metal).
-    /// </summary>
-    public sealed class SurfaceMaterialIdentifier : MonoBehaviour
-    {
-        [SerializeField] private SurfaceMaterialType _surfaceType = SurfaceMaterialType.Stone;
-        public SurfaceMaterialType SurfaceType => _surfaceType;
-    }
-
-    /// <summary>
     /// Surface-aware Footstep System.
     /// Casts a short Physics.RaycastNonAlloc downward from the foot transform on each OnFootstep animation event,
     /// detects the SurfaceMaterialIdentifier or PhysicsMaterial, and publishes OnFootstepEvent

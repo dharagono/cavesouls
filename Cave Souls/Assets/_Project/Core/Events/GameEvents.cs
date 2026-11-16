@@ -124,4 +124,16 @@ namespace CaveSouls.Core
     {
         public string Reason;
     }
+
+    public struct OnInteractionPromptChangedEvent : IGameEvent
+    {
+        public bool IsVisible;
+        public string PromptText;
+    }
+
+    public struct OnLoreInspectedEvent : IGameEvent
+    {
+        public string Title;
+        public string Description;
+    }
 }

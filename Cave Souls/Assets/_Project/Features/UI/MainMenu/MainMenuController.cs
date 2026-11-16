@@ -62,6 +62,9 @@ namespace CaveSouls.Features.UI
         [SerializeField] private Button _languageToggleButton;
         [SerializeField] private RectTransform _languageButtonRect;
         [SerializeField] private Text _languageButtonLabel;
+        [SerializeField] private Button _statsToggleButton;
+        [SerializeField] private RectTransform _statsButtonRect;
+        [SerializeField] private Text _statsButtonLabel;
         [SerializeField] private Text _settingsHeaderLabel;
         [SerializeField] private Button _closeSettingsButton;
         [SerializeField] private RectTransform _closeSettingsRect;
@@ -385,6 +388,13 @@ namespace CaveSouls.Features.UI
             RefreshLocalizedTexts();
         }
 
+        public void OnTogglePerformanceStatsClicked()
+        {
+            PlayConfirmSound();
+            PerformanceStatsOverlay.ToggleOverlay();
+            RefreshLocalizedTexts();
+        }
+
         public void OnCloseSettingsClicked()
         {
             PlayConfirmSound();
@@ -415,10 +425,15 @@ namespace CaveSouls.Features.UI
                 {
                     currentHover = 0;
                 }
+                else if (_statsButtonRect != null &&
+                    RectTransformUtility.RectangleContainsScreenPoint(_statsButtonRect, mousePos, _uiCamera))
+                {
+                    currentHover = 1;
+                }
                 else if (_closeSettingsRect != null &&
                     RectTransformUtility.RectangleContainsScreenPoint(_closeSettingsRect, mousePos, _uiCamera))
                 {
-                    currentHover = 1;
+                    currentHover = 2;
                 }
 
                 if (currentHover != -1 && currentHover != _settingsHoverIndex)
@@ -439,6 +454,11 @@ namespace CaveSouls.Features.UI
                         return;
                     }
                     if (currentHover == 1)
+                    {
+                        OnTogglePerformanceStatsClicked();
+                        return;
+                    }
+                    if (currentHover == 2)
                     {
                         OnCloseSettingsClicked();
                         return;
@@ -602,6 +622,23 @@ namespace CaveSouls.Features.UI
                 _languageButtonLabel.text = isSpanish
                     ? "I D I O M A   ( L A N G U A G E ) :     <   E S P A Ñ O L   >"
                     : "L A N G U A G E   ( I D I O M A ) :     <   E N G L I S H   >";
+            }
+
+            if (_statsButtonLabel != null)
+            {
+                bool statsOn = PerformanceStatsOverlay.IsActive;
+                if (isSpanish)
+                {
+                    _statsButtonLabel.text = statsOn
+                        ? "E S T A D Í S T I C A S   ( F P S ) :     <   A C T I V A D O   >"
+                        : "E S T A D Í S T I C A S   ( F P S ) :     <   D E S A C T I V A D O   >";
+                }
+                else
+                {
+                    _statsButtonLabel.text = statsOn
+                        ? "P E R F O R M A N C E   S T A T S :     <   O N   >"
+                        : "P E R F O R M A N C E   S T A T S :     <   O F F   >";
+                }
             }
 
             if (_backButtonLabel != null)

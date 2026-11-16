@@ -9,6 +9,7 @@ Shader "CaveSouls/URP/SoulsVolumetricGodRay"
         _NoiseScale("Volumetric Dust Noise Scale", Range(0.5, 10.0)) = 3.2
         _ScrollSpeed("Dust Drift Speed", Range(0.0, 0.5)) = 0.045
         _BeamContrast("Ray Striation Contrast", Range(0.5, 4.0)) = 1.55
+        [Toggle] _EnableWorldHeightFade("Enable World Height Fade", Float) = 0.0
     }
 
     SubShader
@@ -65,6 +66,7 @@ Shader "CaveSouls/URP/SoulsVolumetricGodRay"
                 float _NoiseScale;
                 float _ScrollSpeed;
                 float _BeamContrast;
+                float _EnableWorldHeightFade;
             CBUFFER_END
 
             float Hash21(float2 p)
@@ -106,8 +108,8 @@ Shader "CaveSouls/URP/SoulsVolumetricGodRay"
                 float uFade = pow(saturate(sin(input.uv.x * 3.14159265)), 1.65);
                 float vFade = pow(saturate(sin(input.uv.y * 3.14159265)), 1.85);
 
-                // Fade out smoothly before reaching the CAVE SOULS title (world Y > 1.55m)
-                float worldHeightFade = saturate((1.65 - input.positionWS.y) / 1.45);
+                // Fade out smoothly if height fade is enabled (e.g. in menu scene)
+                float worldHeightFade = _EnableWorldHeightFade > 0.5 ? saturate((1.65 - input.positionWS.y) / 1.45) : 1.0;
 
                 // 2. Fine crepuscular ray striations + drifting dust motes
                 float t = _Time.y * _ScrollSpeed;
