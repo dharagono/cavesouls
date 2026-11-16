@@ -229,9 +229,10 @@ namespace CaveSouls.Features.Player
 
             for (int i = 0; i < hits; i++)
             {
-                if (_overlapCols[i] != null && _overlapCols[i].TryGetComponent(out IInteractable interactable))
+                if (_overlapCols[i] != null)
                 {
-                    if (interactable.CanInteract(gameObject))
+                    IInteractable interactable = _overlapCols[i].GetComponent<IInteractable>() ?? _overlapCols[i].GetComponentInParent<IInteractable>();
+                    if (interactable != null && interactable.CanInteract(gameObject))
                     {
                         foundInteractable = interactable;
                         break;
