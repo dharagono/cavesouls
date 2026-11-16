@@ -42,6 +42,8 @@ namespace CaveSouls.Features.Player
         private float _proceduralStepCycle;
         private IInteractable _nearbyInteractable;
         private bool _promptWasVisible;
+        private Vector3 _spawnPosition;
+        private Quaternion _spawnRotation;
 
         private readonly RaycastHit[] _groundHits = new RaycastHit[2];
         private readonly Collider[] _overlapCols = new Collider[6];
@@ -55,6 +57,22 @@ namespace CaveSouls.Features.Player
             _mudSpeedMultiplier = Mathf.Clamp(multiplier, 0.4f, 1.0f);
         }
 
+        private void OnEnable()
+        {
+            EventBus<OnCheckpointRestedEvent>.Subscribe(HandleCheckpointRested);
+        }
+
+        private void OnDisable()
+        {
+            EventBus<OnCheckpointRestedEvent>.Unsubscribe(HandleCheckpointRested);
+        }
+
+        private void HandleCheckpointRested(in OnCheckpointRestedEvent evt)
+        {
+            _spawnPosition = evt.RespawnPosition;
+            _spawnRotation = evt.RespawnRotation;
+        }
+
         private void Awake()
         {
             if (_characterController == null)
@@ -65,6 +83,8 @@ namespace CaveSouls.Features.Player
             {
                 _footstepAudioSource = GetComponent<AudioSource>();
             }
+            _spawnPosition = transform.position;
+            _spawnRotation = transform.rotation;
         }
 
         private void Start()
@@ -73,15 +93,46 @@ namespace CaveSouls.Features.Player
             {
                 _orbitCamera = FindAnyObjectByType<SoulsOrbitCamera>();
             }
+
+            // Ground snap: Ensure the player is positioned safely above the terrain mesh surface
+            EnsureGroundPlacement();
+        }
+
+        public void EnsureGroundPlacement()
+        {
+            Vector3 origin = transform.position + Vector3.up * 4.0f;
+            if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, 20.0f, ~0, QueryTriggerInteraction.Ignore))
+            {
+                if (_characterController != null) _characterController.enabled = false;
+                transform.position = hit.point + Vector3.up * 0.08f;
+                if (_characterController != null) _characterController.enabled = true;
+                _spawnPosition = transform.position;
+                _verticalVelocity = -1.0f;
+            }
         }
 
         private void Update()
         {
             float dt = Time.deltaTime;
 
+            // Void fall protection: respawn if fallen below the map bounds
+            if (transform.position.y < -30f)
+            {
+                RespawnAtSafeLocation();
+                return;
+            }
+
             HandleLocomotion(dt);
             HandleFootsteps(dt);
             HandleInteractionCheck();
+        }
+
+        private void RespawnAtSafeLocation()
+        {
+            if (_characterController != null) _characterController.enabled = false;
+            transform.SetPositionAndRotation(_spawnPosition, _spawnRotation);
+            if (_characterController != null) _characterController.enabled = true;
+            _verticalVelocity = 0f;
         }
 
         private void HandleLocomotion(float dt)

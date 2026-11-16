@@ -512,8 +512,10 @@ namespace CaveSouls.Core.Editor
             terrainObj.name = "ENV_PrimordialMudBed_Terrain";
             terrainObj.transform.SetParent(layer0Root.transform);
             terrainObj.transform.position = Vector3.zero;
+            terrainObj.transform.rotation = Quaternion.identity;
             ApplyMaterialRecursively(terrainObj, mudMat);
             EnsureMeshCollider(terrainObj);
+            Physics.SyncTransforms();
             MarkStaticRecursive(terrainObj);
             var terrainSurface = terrainObj.AddComponent<SurfaceMaterialIdentifier>();
             SetSurfaceType(terrainSurface, SurfaceMaterialType.Dirt);
@@ -638,10 +640,10 @@ namespace CaveSouls.Core.Editor
                 bodiesRoot.transform.SetParent(layer0Root.transform);
                 (Vector3 pos, Vector3 rot)[] bodyTransforms =
                 {
-                    (new Vector3(-1.6f, -1.35f, -3.2f), new Vector3(82f, 40f, -15f)),
-                    (new Vector3(3.8f, 1.2f, 14f), new Vector3(15f, -70f, 25f)),
-                    (new Vector3(-4.5f, 2.4f, 26f), new Vector3(65f, 120f, 0f)),
-                    (new Vector3(2.5f, 5.2f, 44f), new Vector3(80f, -20f, 10f))
+                    (new Vector3(-1.6f, -1.25f, -3.2f), new Vector3(82f, 40f, -15f)),
+                    (new Vector3(3.8f, 1.95f, 14f), new Vector3(15f, -70f, 25f)),
+                    (new Vector3(-4.5f, 2.80f, 26f), new Vector3(65f, 120f, 0f)),
+                    (new Vector3(2.5f, 5.95f, 44f), new Vector3(80f, -20f, 10f))
                 };
                 for (int i = 0; i < bodyTransforms.Length; i++)
                 {
@@ -655,10 +657,10 @@ namespace CaveSouls.Core.Editor
             }
 
             // Tutorial Ramp & Transition Elevator connecting to Layer 1 (The Hub)
-            GameObject tutorialAscentRamp = InstantiateModularPiece(bridgePrefab, new Vector3(0f, 7.8f, 57f), Quaternion.Euler(-18f, 0f, 0f), new Vector3(1.2f, 1f, 1.4f), gothicMat, layer0Root.transform, "RAMP_TutorialToHubShaft");
+            GameObject tutorialAscentRamp = InstantiateModularPiece(bridgePrefab, new Vector3(0f, 7.5f, 52f), Quaternion.Euler(-14f, 0f, 0f), new Vector3(1.2f, 1f, 1.4f), gothicMat, layer0Root.transform, "RAMP_TutorialToHubShaft");
 
             // Tutorial To Hub Scaffolding Elevator Tower
-            GameObject elevatorTutorialObj = InstantiateModularPiece(scaffoldPrefab, new Vector3(0f, 7.8f, 68f), Quaternion.identity, new Vector3(1.4f, 1.35f, 1.4f), woodMat, layer0Root.transform, "ELEVATOR_TutorialToHub");
+            GameObject elevatorTutorialObj = InstantiateModularPiece(scaffoldPrefab, new Vector3(0f, 7.8f, 66f), Quaternion.identity, new Vector3(1.4f, 1.35f, 1.4f), woodMat, layer0Root.transform, "ELEVATOR_TutorialToHub");
             var tutElevator = elevatorTutorialObj.AddComponent<PersistentElevator>();
             EnsureTriggerCollider(elevatorTutorialObj, 4.0f);
 
@@ -1223,7 +1225,7 @@ namespace CaveSouls.Core.Editor
             out SoulsPlayerController playerCtrl)
         {
             playerObj = new GameObject("PLAYER_SoulsExplorer");
-            playerObj.transform.position = new Vector3(0f, -1.48f, -5.0f);
+            playerObj.transform.position = new Vector3(0f, -1.15f, -5.0f);
             playerObj.transform.rotation = Quaternion.identity;
 
             CharacterController cc = playerObj.AddComponent<CharacterController>();
